@@ -1,0 +1,24 @@
+# GCP Project Configuration
+project_id = "your-gcp-project-id"
+region     = "us-central1"
+zone       = "us-central1-a"
+
+# Environment
+environment = "dev"
+
+# Cloud SQL Configuration
+db_instance_name = "acro-planner-mysql"
+db_version       = "MYSQL_8_0"
+db_tier          = "db-f1-micro" # Smallest tier for development
+db_disk_size     = 10
+db_name          = "acro_planner"
+db_user          = "acro_user"
+
+# Cloud Run Configuration
+service_name          = "acro-planner-backend"
+container_port        = 8080
+memory_limit          = "512Mi"
+cpu_limit             = "1"
+min_instances         = 0
+max_instances         = 10
+allow_unauthenticated = true

@@ -1,0 +1,46 @@
+# Python
+__pycache__
+*.pyc
+*.pyo
+*.pyd
+.Python
+*.so
+*.egg
+*.egg-info
+dist
+build
+
+# Poetry
+.venv
+poetry.lock
+
+# Environment
+.env
+.env.*
+
+# Testing
+.coverage
+.pytest_cache
+htmlcov
+.tox
+
+# IDE
+.vscode
+.idea
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Git
+.git
+.gitignore
+
+# Documentation
+*.md
+docs/
+
+# Development
+*.log
+logs/
+tmp/

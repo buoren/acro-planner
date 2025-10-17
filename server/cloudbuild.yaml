@@ -1,0 +1,49 @@
+# Google Cloud Build configuration
+steps:
+  # Build the container image
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['build', '-t', 'gcr.io/$PROJECT_ID/acro-planner-backend:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/acro-planner-backend:latest', '.']
+    dir: 'server'
+
+  # Push the container image to Container Registry
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '--all-tags', 'gcr.io/$PROJECT_ID/acro-planner-backend']
+
+  # Deploy container image to Cloud Run
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - 'acro-planner-backend'
+      - '--image'
+      - 'gcr.io/$PROJECT_ID/acro-planner-backend:$COMMIT_SHA'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--port'
+      - '8080'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--max-instances'
+      - '10'
+      - '--min-instances'
+      - '0'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production'
+
+# Substitutions for deployment customization
+substitutions:
+  _REGION: us-central1  # Default region, can be overridden
+
+# Build timeout
+timeout: '1200s'
+
+# Store images in Container Registry
+images:
+  - 'gcr.io/$PROJECT_ID/acro-planner-backend:$COMMIT_SHA'
+  - 'gcr.io/$PROJECT_ID/acro-planner-backend:latest'
