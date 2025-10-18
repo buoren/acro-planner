@@ -113,65 +113,65 @@ resource "google_cloud_run_service_iam_member" "public_access" {
   member   = "allUsers"
 }
 
-# Cloud Build trigger for automated deployments
-resource "google_cloudbuild_trigger" "deploy_trigger" {
-  name        = "${var.service_name}-deploy"
-  description = "Deploy ${var.service_name} to Cloud Run"
+# Cloud Build trigger for automated deployments (commented out - requires GitHub repository connection)
+# resource "google_cloudbuild_trigger" "deploy_trigger" {
+#   name        = "${var.service_name}-deploy"
+#   description = "Deploy ${var.service_name} to Cloud Run"
 
-  github {
-    owner = "YOUR_GITHUB_USERNAME" # Replace with your GitHub username
-    name  = "acro-planner"
-    push {
-      branch = "^main$"
-    }
-  }
+#   github {
+#     owner = "YOUR_GITHUB_USERNAME" # Replace with your GitHub username
+#     name  = "acro-planner"
+#     push {
+#       branch = "^main$"
+#     }
+#   }
 
-  build {
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "build",
-        "-t",
-        "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.service_name}:$COMMIT_SHA",
-        "-t",
-        "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.service_name}:latest",
-        "./server"
-      ]
-    }
+#   build {
+#     step {
+#       name = "gcr.io/cloud-builders/docker"
+#       args = [
+#         "build",
+#         "-t",
+#         "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.service_name}:$COMMIT_SHA",
+#         "-t",
+#         "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.service_name}:latest",
+#         "./server"
+#       ]
+#     }
 
-    step {
-      name = "gcr.io/cloud-builders/docker"
-      args = [
-        "push",
-        "--all-tags",
-        "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.service_name}"
-      ]
-    }
+#     step {
+#       name = "gcr.io/cloud-builders/docker"
+#       args = [
+#         "push",
+#         "--all-tags",
+#         "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.service_name}"
+#       ]
+#     }
 
-    step {
-      name = "gcr.io/google.com/cloudsdktool/cloud-sdk"
-      entrypoint = "gcloud"
-      args = [
-        "run",
-        "deploy",
-        var.service_name,
-        "--image",
-        "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.service_name}:$COMMIT_SHA",
-        "--region",
-        var.region,
-        "--platform",
-        "managed",
-        "--service-account",
-        google_service_account.cloud_run_sa.email,
-      ]
-    }
+#     step {
+#       name = "gcr.io/google.com/cloudsdktool/cloud-sdk"
+#       entrypoint = "gcloud"
+#       args = [
+#         "run",
+#         "deploy",
+#         var.service_name,
+#         "--image",
+#         "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.backend_repo.repository_id}/${var.service_name}:$COMMIT_SHA",
+#         "--region",
+#         var.region,
+#         "--platform",
+#         "managed",
+#         "--service-account",
+#         google_service_account.cloud_run_sa.email,
+#       ]
+#     }
 
-    options {
-      logging = "CLOUD_LOGGING_ONLY"
-    }
-  }
+#     options {
+#       logging = "CLOUD_LOGGING_ONLY"
+#     }
+#   }
 
-  service_account = google_service_account.cloud_build_sa.id
+#   service_account = google_service_account.cloud_build_sa.id
 
-  depends_on = [google_project_service.required_apis]
-}
+#   depends_on = [google_project_service.required_apis]
+# }

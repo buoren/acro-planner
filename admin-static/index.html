@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acro Planner Admin</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background-color: #f8fafc;
+            color: #334155;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 3rem;
+        }
+
+        h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            color: #1e293b;
+            margin: 0 0 0.5rem 0;
+        }
+
+        header p {
+            font-size: 1.1rem;
+            color: #64748b;
+            margin: 0;
+        }
+
+        section {
+            margin-bottom: 3rem;
+        }
+
+        h2 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #1e293b;
+            margin: 0 0 1rem 0;
+        }
+
+        .status-card {
+            background: white;
+            border-radius: 0.75rem;
+            border-left: 4px solid;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            margin-bottom: 1rem;
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 0.75rem;
+            margin-bottom: 0.5rem;
+        }
+
+        .status-icon {
+            font-size: 1.25rem;
+        }
+
+        .status-header h3 {
+            margin: 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+        }
+
+        .status-message {
+            margin: 0.5rem 0;
+            color: #475569;
+        }
+
+        small {
+            color: #94a3b8;
+            font-family: monospace;
+        }
+
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+        }
+
+        .feature-card {
+            background: white;
+            border-radius: 0.75rem;
+            padding: 1.5rem;
+            box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+            border: 1px solid #e2e8f0;
+        }
+
+        .feature-card h3 {
+            margin: 0 0 0.5rem 0;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: #1e293b;
+        }
+
+        .feature-card p {
+            margin: 0 0 1rem 0;
+            color: #64748b;
+            line-height: 1.5;
+        }
+
+        button {
+            background: #e2e8f0;
+            border: none;
+            border-radius: 0.5rem;
+            padding: 0.5rem 1rem;
+            font-size: 0.875rem;
+            color: #64748b;
+            cursor: not-allowed;
+            font-weight: 500;
+        }
+
+        button:not(:disabled) {
+            background: #3b82f6;
+            color: white;
+            cursor: pointer;
+        }
+
+        button:not(:disabled):hover {
+            background: #2563eb;
+        }
+
+        .connected {
+            border-left-color: #22c55e;
+        }
+
+        .disconnected {
+            border-left-color: #ef4444;
+        }
+
+        .checking {
+            border-left-color: #f59e0b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🤸‍♀️ Acro Planner Admin</h1>
+            <p>Administrative interface for managing the Acro Planner application</p>
+        </header>
+
+        <main>
+            <section class="status-section">
+                <h2>System Status</h2>
+                <div id="status-card" class="status-card checking">
+                    <div class="status-header">
+                        <span id="status-icon" class="status-icon">⏳</span>
+                        <h3>Backend API</h3>
+                    </div>
+                    <p id="status-message" class="status-message">Checking API status...</p>
+                    <small>API Endpoint: https://acro-planner-backend-733697808355.us-central1.run.app</small>
+                </div>
+            </section>
+
+            <section class="features-section">
+                <h2>Admin Features</h2>
+                <div class="features-grid">
+                    <div class="feature-card">
+                        <h3>🏃‍♀️ User Management</h3>
+                        <p>Manage user accounts, permissions, and profiles</p>
+                        <button disabled>Coming Soon</button>
+                    </div>
+                    <div class="feature-card">
+                        <h3>📋 Session Planning</h3>
+                        <p>Create and manage acrobatics training sessions</p>
+                        <button disabled>Coming Soon</button>
+                    </div>
+                    <div class="feature-card">
+                        <h3>📊 Analytics</h3>
+                        <p>View usage statistics and performance metrics</p>
+                        <button disabled>Coming Soon</button>
+                    </div>
+                    <div class="feature-card">
+                        <h3>⚙️ Settings</h3>
+                        <p>Configure application settings and preferences</p>
+                        <button disabled>Coming Soon</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script>
+        const API_BASE_URL = 'https://acro-planner-backend-733697808355.us-central1.run.app';
+
+        async function checkApiHealth() {
+            const statusCard = document.getElementById('status-card');
+            const statusIcon = document.getElementById('status-icon');
+            const statusMessage = document.getElementById('status-message');
+
+            try {
+                const response = await fetch(`${API_BASE_URL}/health`);
+                const data = await response.json();
+                
+                if (data.status === 'healthy') {
+                    statusCard.className = 'status-card connected';
+                    statusIcon.textContent = '✅';
+                    statusMessage.textContent = 'Successfully connected to backend API';
+                } else {
+                    statusCard.className = 'status-card disconnected';
+                    statusIcon.textContent = '❌';
+                    statusMessage.textContent = 'Backend API is not responding correctly';
+                }
+            } catch (error) {
+                statusCard.className = 'status-card disconnected';
+                statusIcon.textContent = '❌';
+                statusMessage.textContent = `Failed to connect to backend: ${error.message}`;
+            }
+        }
+
+        // Check API health on page load
+        document.addEventListener('DOMContentLoaded', checkApiHealth);
+    </script>
+</body>
+</html>

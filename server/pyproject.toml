@@ -12,7 +12,9 @@ dependencies = [
     "uvicorn[standard] (>=0.37.0,<0.38.0)",
     "sqlalchemy (>=2.0.44,<3.0.0)",
     "pymysql (>=1.1.2,<2.0.0)",
-    "python-dotenv (>=1.1.1,<2.0.0)"
+    "python-dotenv (>=1.1.1,<2.0.0)",
+    "ulid-py (>=1.1.0,<2.0.0)",
+    "email-validator (>=2.1.0,<3.0.0)"
 ]
 
 
