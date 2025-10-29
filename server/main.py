@@ -121,8 +121,10 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(users_router)
 
 @app.get("/")
-async def root():
-    return {"message": "Hello World"}
+async def root(request: Request, user: dict = Depends(require_auth)):
+    """Root endpoint - requires authentication, redirects to admin after login"""
+    from fastapi.responses import RedirectResponse
+    return RedirectResponse(url="/admin", status_code=302)
 
 @app.get("/health")
 async def health_check():
