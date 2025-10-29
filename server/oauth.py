@@ -81,12 +81,31 @@ async def oauth_login(request: Request):
             detail="OAuth not configured. Please set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET environment variables."
         )
     
+    # Ensure session is initialized before OAuth flow
+    if not hasattr(request, 'session') or request.session is None:
+        # Initialize empty session if it doesn't exist
+        request.session = {}
+    
     redirect_uri = f"{BASE_URL}/auth/callback"
+    
+    # Add some debugging
+    logger.info(f"Starting OAuth flow with redirect_uri: {redirect_uri}")
+    logger.info(f"Session available: {hasattr(request, 'session')}")
+    
     return await oauth.google.authorize_redirect(request, redirect_uri)
 
 async def oauth_callback(request: Request):
     """Handle OAuth callback"""
     try:
+        logger.info("OAuth callback received")
+        logger.info(f"Session available: {hasattr(request, 'session')}")
+        logger.info(f"Query params: {dict(request.query_params)}")
+        
+        # Ensure session exists
+        if not hasattr(request, 'session'):
+            logger.error("No session available in callback")
+            raise HTTPException(status_code=400, detail="Session not available")
+        
         # Get the authorization code and exchange for token
         token = await oauth.google.authorize_access_token(request)
         
@@ -115,6 +134,10 @@ async def oauth_callback(request: Request):
         
     except Exception as e:
         logger.error(f"OAuth callback error: {e}")
+        # If it's a state mismatch, try redirecting back to login to retry
+        if "mismatching_state" in str(e).lower() or "csrf" in str(e).lower():
+            logger.warning("State mismatch detected, redirecting to login page")
+            return RedirectResponse(url=f"{BASE_URL}/")
         raise HTTPException(status_code=400, detail=f"Authentication failed: {str(e)}")
 
 def logout_user(request: Request):

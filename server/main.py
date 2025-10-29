@@ -121,10 +121,24 @@ app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(users_router)
 
 @app.get("/")
-async def root(request: Request, user: dict = Depends(require_auth)):
-    """Root endpoint - requires authentication, redirects to admin after login"""
-    from fastapi.responses import RedirectResponse
-    return RedirectResponse(url="/admin", status_code=302)
+async def root(request: Request):
+    """Root endpoint - serve login page for unauthenticated users, redirect authenticated users to admin"""
+    # Ensure session is initialized
+    if not hasattr(request, 'session'):
+        # This shouldn't happen with SessionMiddleware, but let's be safe
+        request.session = {}
+    
+    user = get_current_user(request)
+    if user:
+        # User is already authenticated, redirect to admin
+        from fastapi.responses import RedirectResponse
+        return RedirectResponse(url="/admin", status_code=302)
+    else:
+        # User not authenticated, serve login page
+        # Initialize session to ensure OAuth state can be stored
+        if 'session_init' not in request.session:
+            request.session['session_init'] = True
+        return FileResponse('static/login.html')
 
 @app.get("/health")
 async def health_check():
@@ -140,6 +154,65 @@ async def admin_interface(request: Request, user: dict = Depends(require_auth)):
 async def login(request: Request):
     """Initiate OAuth login"""
     return await oauth_login(request)
+
+@app.post("/auth/login/password")
+async def password_login(request: Request):
+    """Handle password-based login"""
+    try:
+        from pydantic import BaseModel
+        
+        class LoginRequest(BaseModel):
+            email: str
+            password: str
+        
+        # Parse request body
+        body = await request.json()
+        login_data = LoginRequest(**body)
+        
+        # Check if database is available
+        database_url = os.getenv("DATABASE_URL")
+        if not database_url:
+            raise HTTPException(status_code=503, detail="Database not available")
+        
+        # Authenticate user
+        from database import get_db
+        from models import Users
+        from utils.auth import verify_password
+        from sqlalchemy.orm import Session
+        
+        # Get database session
+        db_gen = get_db()
+        db: Session = next(db_gen)
+        
+        try:
+            # Find user by email
+            user = db.query(Users).filter(Users.email == login_data.email).first()
+            
+            if not user:
+                raise HTTPException(status_code=401, detail="Invalid email or password")
+            
+            # Verify password
+            if not verify_password(login_data.password, user.password_hash, user.salt):
+                raise HTTPException(status_code=401, detail="Invalid email or password")
+            
+            # Create session (same format as OAuth)
+            request.session['user'] = {
+                'email': user.email,
+                'name': user.name,
+                'picture': '',  # No picture for password login
+                'sub': user.id,  # Use user ID as sub
+                'auth_method': 'password'
+            }
+            
+            return {"success": True, "message": "Login successful", "redirect": "/admin"}
+            
+        finally:
+            db.close()
+            
+    except HTTPException:
+        raise
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Login failed: {str(e)}")
 
 @app.get("/auth/callback")
 async def auth_callback(request: Request):

@@ -11,6 +11,29 @@ Complete Acro Planner application with FastAPI backend deployed to Google Cloud,
 - **Flutter App**: Running locally with production API integration
 - **Admin Interface**: SvelteKit admin running locally with production API integration
 
+## 🔥 CRITICAL DEPLOYMENT WORKFLOW
+**ALWAYS DEPLOY TO PRODUCTION AFTER EVERY FIX UNLESS TOLD OTHERWISE**
+
+### Primary Deployment Tool
+- **Use `./scripts/deploy.sh`** - This is the main deployment script, NOT terraform
+- Terraform is only used for infrastructure setup, NOT for deployments
+- The deploy.sh script handles building, pushing Docker images, and deploying to Cloud Run
+
+### Testing Protocol
+- **ALWAYS test fixes against production endpoints** after deployment
+- Verify functionality with live production URLs
+- Ensure changes are working in the real environment, not just locally
+
+### Deployment Commands
+```bash
+# Backend deployment (from project root)
+./scripts/deploy.sh
+
+# Admin interface deployment (if needed)
+cd admin && npm run build
+# Then deploy admin Docker container to Cloud Run
+```
+
 ## Project Structure (Complete)
 ```
 acro-planner/
@@ -125,34 +148,23 @@ flutter run -d ios       # For iOS
 flutter run -d android   # For Android
 ```
 
-## 🖥️ Admin Interface (SvelteKit - NEW)
+## 🖥️ Admin Interface
 
-### Features
-- ✅ TypeScript with full type safety
-- ✅ Modern responsive design
-- ✅ Real-time API connection monitoring
-- ✅ Professional admin dashboard layout
-- ✅ Ready for admin feature development
+### Production (Deployed)
+- **URL**: https://acro-planner-backend-733697808355.us-central1.run.app/admin
+- **Type**: Static HTML served directly from backend
+- **Deployment**: Automatically deployed with backend using `./scripts/deploy.sh`
 
-### API Integration (lib/api.ts)
-```typescript
-const API_BASE_URL = 'https://acro-planner-backend-733697808355.us-central1.run.app';
+### Local Development (Optional)
+The `admin/` directory contains a SvelteKit version for local development and testing:
 
-export class ApiService {
-  async healthCheck(): Promise<boolean> {
-    const response = await this.get<{ status: string }>('/health');
-    return response.data?.status === 'healthy';
-  }
-  // ... full CRUD methods
-}
-```
-
-### Running Admin Interface
 ```bash
 cd admin
-npm install --force  # Due to Node version compatibility
-npm run dev          # Starts on http://localhost:5173
+npm install
+npm run dev  # Starts on http://localhost:5173
 ```
+
+**Note**: This SvelteKit version is for development only and is NOT deployed to production.
 
 ## 🔐 Security & Configuration
 
@@ -186,13 +198,10 @@ npm run dev          # Starts on http://localhost:5173
 
 ## 🚀 Deployment Commands
 
-### Backend (Automated via Terraform)
+### Production Deployment (Single Command)
 ```bash
-# Already deployed! But for updates:
-cd terraform
-docker build --platform linux/amd64 -t us-central1-docker.pkg.dev/acro-session-planner/acro-planner/acro-planner-backend:latest ./server
-docker push us-central1-docker.pkg.dev/acro-session-planner/acro-planner/acro-planner-backend:latest
-gcloud run deploy acro-planner-backend --image=us-central1-docker.pkg.dev/acro-session-planner/acro-planner/acro-planner-backend:latest --region=us-central1
+# Deploy backend with admin interface
+./scripts/deploy.sh
 ```
 
 ### Local Development
@@ -205,7 +214,7 @@ poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 cd clients/acro_planner_app
 flutter run -d chrome
 
-# Admin Interface
+# Admin Interface (SvelteKit development version)
 cd admin
 npm run dev
 ```
