@@ -3,6 +3,7 @@ Pydantic models for API requests and responses.
 """
 
 from pydantic import BaseModel, field_validator, EmailStr, ValidationInfo
+from typing import Optional
 
 
 class UserRegistration(BaseModel):
@@ -40,3 +41,4 @@ class UserResponse(BaseModel):
     email: str
     name: str
     created_at: str
+    error: Optional[str] = None

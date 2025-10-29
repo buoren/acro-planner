@@ -5,45 +5,21 @@ This file contains example models to demonstrate the structure.
 Replace with your actual models as needed.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Enum, Numeric, JSON, TypeDecorator, CHAR
-from ulid import ULID
+from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Enum, Numeric, JSON
 import sqlalchemy.types as types
-from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 import enum
+import uuid
 
-Base = declarative_base()
-
-
-class ULIDType(TypeDecorator):
-    """Custom ULID type for SQLAlchemy using ulid-py package."""
-    
-    impl = CHAR
-    cache_ok = True
-    
-    def load_dialect_impl(self, dialect):
-        return dialect.type_descriptor(CHAR(26))
-    
-    def process_bind_param(self, value, dialect):
-        if value is None:
-            return value
-        if isinstance(value, ULID):
-            return str(value)
-        if isinstance(value, str):
-            return value
-        return str(ULID())
-    
-    def process_result_value(self, value, dialect):
-        if value is None:
-            return value
-        return ULID.from_str(value)
+# Import Base from database.py to share the same metadata
+from database import Base
 
 class Users(Base):
     """Users model for authentication and profile management."""
     __tablename__ = "users"
 
-    id = Column(ULIDType, primary_key=True)
+    id = Column(String(36), primary_key=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(100), nullable=False)
     password_hash = Column(String(255), nullable=False)
@@ -56,9 +32,9 @@ class Equipment(Base):
     """Equipment model for acrobatics classes/sessions."""
     __tablename__ = "equipment"
 
-    id = Column(ULIDType, primary_key=True)
+    id = Column(String(36), primary_key=True)
     name = Column(String(200), nullable=False)
-    description = Column(String)
+    description = Column(String(1000))
     media = Column(JSON)
 
 
@@ -66,7 +42,7 @@ class Location(Base):
     """Location model for acrobatics classes/sessions."""
     __tablename__ = "locations"
 
-    id = Column(ULIDType, primary_key=True)
+    id = Column(String(36), primary_key=True)
     name = Column(String(200), nullable=False)
     details = Column(JSON)
     equipment_ids = Column(JSON)
@@ -76,9 +52,9 @@ class Capabilities(Base):
     """Capabilities model for acrobatics classes/sessions."""
     __tablename__ = "capabilities"
 
-    id = Column(ULIDType, primary_key=True)
+    id = Column(String(36), primary_key=True)
     name = Column(String(200), nullable=False)
-    description = Column(String)
+    description = Column(String(1000))
     media = Column(JSON)
 
 
@@ -86,9 +62,9 @@ class Events(Base):
     """Events model for acrobatics classes/sessions."""
     __tablename__ = "events"
 
-    id = Column(ULIDType, primary_key=True)
+    id = Column(String(36), primary_key=True)
     name = Column(String(200), nullable=False)
-    description = Column(String)
+    description = Column(String(1000))
     prerequisite_ids = Column(JSON)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
@@ -98,11 +74,11 @@ class EventSlot(Base):
     """Event slot model for acrobatics classes/sessions."""
     __tablename__ = "event_slots"
 
-    id = Column(ULIDType, primary_key=True)
-    location_id = Column(ULIDType, ForeignKey("locations.id"), nullable=False)
+    id = Column(String(36), primary_key=True)
+    location_id = Column(String(36), ForeignKey("locations.id"), nullable=False)
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
-    event_id = Column(ULIDType, ForeignKey("events.id"), nullable=False)
+    event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
     day_number = Column(Integer, nullable=False)
 
 
@@ -110,9 +86,9 @@ class Attendees(Base):
     """Attendees model for acrobatics classes/sessions."""
     __tablename__ = "attendees"
     
-    id = Column(ULIDType, primary_key=True)
-    user_id = Column(ULIDType, ForeignKey("users.id"), nullable=False)
-    event_id = Column(ULIDType, ForeignKey("events.id"), nullable=False)
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
     is_registered = Column(Boolean, default=False)
 
 
@@ -120,8 +96,8 @@ class Hosts(Base):
     """Hosts model for acrobatics classes/sessions."""
     __tablename__ = "hosts"
     
-    id = Column(ULIDType, primary_key=True)
-    attendee_id = Column(ULIDType, ForeignKey("attendees.id"), nullable=False)
+    id = Column(String(36), primary_key=True)
+    attendee_id = Column(String(36), ForeignKey("attendees.id"), nullable=False)
     photos = Column(JSON)
     links = Column(JSON)
     

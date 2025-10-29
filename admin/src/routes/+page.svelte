@@ -1,6 +1,8 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
+	import { goto } from '$app/navigation';
 	import { api } from '$lib/api';
+	import { authState, checkSession, signOut, type User as AuthUser } from '$lib/auth';
 
 	interface User {
 		id: string;
@@ -34,6 +36,13 @@
 	};
 
 	onMount(async () => {
+		// Check authentication first
+		const auth = await checkSession();
+		if (!auth.authenticated) {
+			goto('/login');
+			return;
+		}
+		
 		await checkApiStatus();
 		if (apiStatus === 'connected') {
 			await loadUsers();
@@ -58,17 +67,24 @@
 
 	async function loadUsers() {
 		loadingUsers = true;
+		console.log('Starting to load users...');
 		try {
+			console.log('Making API call to /users');
 			const response = await api.get<User[]>('/users');
+			console.log('API response:', response);
 			if (response.data) {
 				users = response.data;
+				console.log('Successfully loaded users:', users);
 			} else {
 				console.error('Failed to load users:', response.error);
+				setMessage(`Failed to load users: ${response.error}`, 'error');
 			}
 		} catch (error) {
 			console.error('Error loading users:', error);
+			setMessage(`Error loading users: ${error}`, 'error');
 		} finally {
 			loadingUsers = false;
+			console.log('Finished loading users, count:', users.length);
 		}
 	}
 
@@ -139,8 +155,36 @@
 
 <div class="container">
 	<header>
-		<h1>🤸‍♀️ Acro Planner Admin</h1>
-		<p>Administrative interface for managing the Acro Planner application</p>
+		<div class="header-content">
+			<div>
+				<h1>🤸‍♀️ Acro Planner Admin</h1>
+				<p>Administrative interface for managing the Acro Planner application</p>
+			</div>
+			<div class="user-info">
+				{#if $authState.authenticated && $authState.user}
+					<div class="user-card">
+						{#if $authState.user.image}
+							<img src={$authState.user.image} alt="User avatar" class="user-avatar" />
+						{:else}
+							<div class="user-avatar-placeholder">
+								{$authState.user.name?.charAt(0).toUpperCase() || '?'}
+							</div>
+						{/if}
+						<div class="user-details">
+							<div class="user-name">{$authState.user.name}</div>
+							<div class="user-email">{$authState.user.email}</div>
+						</div>
+					</div>
+					<button class="logout-btn" on:click={signOut}>
+						Sign Out
+					</button>
+				{:else}
+					<div class="auth-actions">
+						<a href="/login" class="login-btn">Sign In</a>
+					</div>
+				{/if}
+			</div>
+		</div>
 	</header>
 
 	<main>
@@ -267,8 +311,102 @@
 	}
 
 	header {
-		text-align: center;
 		margin-bottom: 3rem;
+	}
+	
+	.header-content {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
+	}
+	
+	.user-info {
+		display: flex;
+		align-items: center;
+		gap: 1rem;
+	}
+	
+	.user-card {
+		display: flex;
+		align-items: center;
+		gap: 0.75rem;
+		padding: 0.5rem 1rem;
+		background: white;
+		border-radius: 0.75rem;
+		box-shadow: 0 1px 3px 0 rgb(0 0 0 / 0.1);
+		border: 1px solid #e2e8f0;
+	}
+	
+	.user-avatar {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+	}
+
+	.user-avatar-placeholder {
+		width: 2rem;
+		height: 2rem;
+		border-radius: 50%;
+		background: #3b82f6;
+		color: white;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-weight: 600;
+		font-size: 0.875rem;
+	}
+	
+	.user-details {
+		display: flex;
+		flex-direction: column;
+		gap: 0.125rem;
+	}
+	
+	.user-name {
+		font-weight: 600;
+		font-size: 0.875rem;
+		color: #1e293b;
+	}
+	
+	.user-email {
+		font-size: 0.75rem;
+		color: #64748b;
+	}
+	
+	.logout-btn {
+		padding: 0.375rem 0.75rem;
+		background: #ef4444;
+		color: white;
+		border: none;
+		border-radius: 0.375rem;
+		font-size: 0.75rem;
+		font-weight: 500;
+		cursor: pointer;
+		transition: background-color 0.2s;
+	}
+	
+	.logout-btn:hover {
+		background: #dc2626;
+	}
+	
+	.auth-actions {
+		display: flex;
+		align-items: center;
+	}
+	
+	.login-btn {
+		padding: 0.5rem 1rem;
+		background: #3b82f6;
+		color: white;
+		text-decoration: none;
+		border-radius: 0.5rem;
+		font-size: 0.875rem;
+		font-weight: 500;
+		transition: background-color 0.2s;
+	}
+	
+	.login-btn:hover {
+		background: #2563eb;
 	}
 
 	h1 {

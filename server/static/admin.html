@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Acro Planner - Admin Interface</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .header {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: white;
+        }
+
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+        }
+
+        .main-container {
+            flex: 1;
+            display: flex;
+            padding: 2rem;
+            gap: 2rem;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+        }
+
+        .sidebar {
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            width: 300px;
+            height: fit-content;
+            color: white;
+        }
+
+        .content {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+            border-radius: 15px;
+            padding: 2rem;
+            color: white;
+        }
+
+        .nav-item {
+            padding: 0.75rem 1rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border: none;
+            background: none;
+            color: white;
+            width: 100%;
+            text-align: left;
+            font-size: 1rem;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            transform: translateX(5px);
+        }
+
+        .nav-item.active {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        .btn {
+            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(45deg, #74b9ff, #0984e3);
+        }
+
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+            backdrop-filter: blur(5px);
+        }
+
+        .form-group {
+            margin: 1rem 0;
+        }
+
+        .form-group label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 500;
+        }
+
+        .form-group input, .form-group select {
+            width: 100%;
+            padding: 0.75rem;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 5px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-size: 1rem;
+        }
+
+        .form-group input::placeholder {
+            color: rgba(255, 255, 255, 0.7);
+        }
+
+        .users-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 1rem 0;
+        }
+
+        .users-table th, .users-table td {
+            padding: 0.75rem;
+            text-align: left;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .users-table th {
+            background: rgba(255, 255, 255, 0.1);
+            font-weight: 600;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            opacity: 0.7;
+        }
+
+        .error {
+            background: rgba(231, 76, 60, 0.2);
+            border: 1px solid rgba(231, 76, 60, 0.5);
+            color: #fff;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .success {
+            background: rgba(46, 204, 113, 0.2);
+            border: 1px solid rgba(46, 204, 113, 0.5);
+            color: #fff;
+            padding: 1rem;
+            border-radius: 5px;
+            margin: 1rem 0;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🤸 Acro Planner Admin</h1>
+        <div class="user-info">
+            <div class="user-avatar" id="userAvatar">👤</div>
+            <div>
+                <div id="userName">Loading...</div>
+                <div style="font-size: 0.8rem; opacity: 0.8;" id="userEmail"></div>
+            </div>
+            <a href="/auth/logout" class="btn btn-secondary">Logout</a>
+        </div>
+    </div>
+
+    <div class="main-container">
+        <div class="sidebar">
+            <h3 style="margin-bottom: 1rem;">Navigation</h3>
+            <button class="nav-item active" onclick="showSection('dashboard')">📊 Dashboard</button>
+            <button class="nav-item" onclick="showSection('users')">👥 Users</button>
+            <button class="nav-item" onclick="showSection('settings')">⚙️ Settings</button>
+            <button class="nav-item" onclick="showSection('auth-status')">🔐 Auth Status</button>
+        </div>
+
+        <div class="content">
+            <!-- Dashboard Section -->
+            <div id="dashboard" class="section">
+                <h2>Dashboard</h2>
+                <div class="card">
+                    <h3>Welcome to Acro Planner Admin! 🎉</h3>
+                    <p>You are successfully authenticated and can access the admin interface.</p>
+                    <br>
+                    <div id="dashboardStats">
+                        <p><strong>Total Users:</strong> <span id="totalUsers">Loading...</span></p>
+                        <p><strong>System Status:</strong> <span style="color: #2ecc71;">Operational</span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Users Section -->
+            <div id="users" class="section hidden">
+                <h2>User Management</h2>
+                
+                <div class="card">
+                    <h3>Add New User</h3>
+                    <form id="addUserForm">
+                        <div class="form-group">
+                            <label for="name">Name:</label>
+                            <input type="text" id="name" name="name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="email">Email:</label>
+                            <input type="email" id="email" name="email" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="role">Role:</label>
+                            <select id="role" name="role">
+                                <option value="user">User</option>
+                                <option value="instructor">Instructor</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn">Add User</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>Existing Users</h3>
+                    <div id="usersTableContainer">
+                        <div class="loading">Loading users...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Section -->
+            <div id="settings" class="section hidden">
+                <h2>Settings</h2>
+                <div class="card">
+                    <h3>Application Settings</h3>
+                    <p>Configuration options and system settings will be available here.</p>
+                </div>
+            </div>
+
+            <!-- Auth Status Section -->
+            <div id="auth-status" class="section hidden">
+                <h2>Authentication Status</h2>
+                <div class="card">
+                    <h3>OAuth Configuration</h3>
+                    <div id="authStatusContent">
+                        <div class="loading">Checking authentication status...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let currentUser = null;
+        const API_BASE = window.location.origin;
+
+        // Initialize the application
+        document.addEventListener('DOMContentLoaded', function() {
+            loadCurrentUser();
+            loadAuthStatus();
+            loadUsers();
+        });
+
+        // Load current user information
+        async function loadCurrentUser() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/me`);
+                const data = await response.json();
+                
+                if (data.authenticated && data.user) {
+                    currentUser = data.user;
+                    document.getElementById('userName').textContent = data.user.name || 'Admin User';
+                    document.getElementById('userEmail').textContent = data.user.email || '';
+                    
+                    // Set user avatar
+                    const avatar = document.getElementById('userAvatar');
+                    if (data.user.picture) {
+                        avatar.innerHTML = `<img src="${data.user.picture}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
+                    } else {
+                        avatar.textContent = (data.user.name || 'A')[0].toUpperCase();
+                    }
+                } else {
+                    // Not authenticated, redirect to login
+                    window.location.href = `${API_BASE}/auth/login`;
+                }
+            } catch (error) {
+                console.error('Error loading user:', error);
+                showError('Failed to load user information');
+            }
+        }
+
+        // Load authentication status
+        async function loadAuthStatus() {
+            try {
+                const response = await fetch(`${API_BASE}/auth/status`);
+                const data = await response.json();
+                
+                const container = document.getElementById('authStatusContent');
+                container.innerHTML = `
+                    <p><strong>OAuth Configured:</strong> ${data.oauth_configured ? '✅ Yes' : '❌ No'}</p>
+                    <p><strong>Status:</strong> ${data.message}</p>
+                    <p><strong>Current User:</strong> ${currentUser ? currentUser.email : 'Loading...'}</p>
+                `;
+            } catch (error) {
+                console.error('Error loading auth status:', error);
+                document.getElementById('authStatusContent').innerHTML = '<p class="error">Failed to load authentication status</p>';
+            }
+        }
+
+        // Load users from the API
+        async function loadUsers() {
+            try {
+                const response = await fetch(`${API_BASE}/users`);
+                const users = await response.json();
+                
+                displayUsers(users);
+                document.getElementById('totalUsers').textContent = users.length;
+            } catch (error) {
+                console.error('Error loading users:', error);
+                document.getElementById('usersTableContainer').innerHTML = '<p class="error">Failed to load users</p>';
+            }
+        }
+
+        // Display users in a table
+        function displayUsers(users) {
+            const container = document.getElementById('usersTableContainer');
+            
+            if (!users || users.length === 0) {
+                container.innerHTML = '<p>No users found.</p>';
+                return;
+            }
+
+            const tableHTML = `
+                <table class="users-table">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Name</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                            <th>Created</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${users.map(user => `
+                            <tr>
+                                <td>${user.id || 'N/A'}</td>
+                                <td>${user.name || 'N/A'}</td>
+                                <td>${user.email || 'N/A'}</td>
+                                <td>${user.role || 'user'}</td>
+                                <td>${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+            
+            container.innerHTML = tableHTML;
+        }
+
+        // Handle user form submission
+        document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(e.target);
+            const userData = {
+                name: formData.get('name'),
+                email: formData.get('email'),
+                role: formData.get('role')
+            };
+
+            try {
+                const response = await fetch(`${API_BASE}/users`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(userData)
+                });
+
+                if (response.ok) {
+                    showSuccess('User added successfully!');
+                    e.target.reset();
+                    loadUsers(); // Refresh the users list
+                } else {
+                    const error = await response.text();
+                    showError(`Failed to add user: ${error}`);
+                }
+            } catch (error) {
+                console.error('Error adding user:', error);
+                showError('Failed to add user');
+            }
+        });
+
+        // Show different sections
+        function showSection(sectionName) {
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.add('hidden');
+            });
+            
+            // Remove active class from all nav items
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            
+            // Show selected section
+            document.getElementById(sectionName).classList.remove('hidden');
+            
+            // Add active class to clicked nav item
+            event.target.classList.add('active');
+        }
+
+        // Utility functions
+        function showError(message) {
+            // Remove existing alerts
+            document.querySelectorAll('.error, .success').forEach(el => el.remove());
+            
+            const alert = document.createElement('div');
+            alert.className = 'error';
+            alert.textContent = message;
+            document.querySelector('.content').insertBefore(alert, document.querySelector('.content').firstChild);
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+
+        function showSuccess(message) {
+            // Remove existing alerts
+            document.querySelectorAll('.error, .success').forEach(el => el.remove());
+            
+            const alert = document.createElement('div');
+            alert.className = 'success';
+            alert.textContent = message;
+            document.querySelector('.content').insertBefore(alert, document.querySelector('.content').firstChild);
+            
+            setTimeout(() => alert.remove(), 5000);
+        }
+    </script>
+</body>
+</html>

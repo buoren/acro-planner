@@ -1,5 +1,5 @@
 #!/bin/bash
-# Deploy script for Acro Planner backend
+# Deploy script for Acro Planner Backend
 
 set -e
 
@@ -16,7 +16,25 @@ if [ ! -f "terraform/terraform.tfvars" ]; then
     exit 1
 fi
 
-echo -e "${GREEN}🚀 Starting deployment process...${NC}"
+echo -e "${GREEN}🚀 Starting backend deployment...${NC}"
+
+# Load OAuth environment variables from admin/.env file
+if [ -f "admin/.env" ]; then
+    echo -e "${YELLOW}Loading OAuth environment variables from admin/.env...${NC}"
+    
+    # Export OAuth variables from .env file
+    GOOGLE_CLIENT_ID=$(grep -E "^AUTH_GOOGLE_ID=" admin/.env | cut -d'=' -f2)
+    GOOGLE_CLIENT_SECRET=$(grep -E "^AUTH_GOOGLE_SECRET=" admin/.env | cut -d'=' -f2)
+    SECRET_KEY=$(grep -E "^AUTH_SECRET=" admin/.env | cut -d'=' -f2)
+    
+    export GOOGLE_CLIENT_ID
+    export GOOGLE_CLIENT_SECRET
+    export SECRET_KEY
+    
+    echo -e "${GREEN}✅ OAuth environment variables loaded from .env file${NC}"
+else
+    echo -e "${YELLOW}⚠️  admin/.env file not found - OAuth will not be configured${NC}"
+fi
 
 # Get Terraform outputs
 cd terraform
@@ -36,28 +54,64 @@ echo -e "${YELLOW}Configuring Docker authentication...${NC}"
 REGISTRY_HOST=$(echo $REGISTRY_URL | cut -d'/' -f1)
 gcloud auth configure-docker $REGISTRY_HOST --quiet
 
-# Build Docker image
-echo -e "${YELLOW}Building Docker image...${NC}"
-docker build -t ${REGISTRY_URL}/acro-planner-backend:latest ./server
+# Build Backend Docker image for Linux/AMD64
+echo -e "${YELLOW}Building backend Docker image for Linux/AMD64...${NC}"
+docker build --platform linux/amd64 -t ${REGISTRY_URL}/acro-planner-backend:latest ./server
 
-# Push to Artifact Registry
-echo -e "${YELLOW}Pushing image to Artifact Registry...${NC}"
+# Push image to Artifact Registry
+echo -e "${YELLOW}Pushing backend image to Artifact Registry...${NC}"
 docker push ${REGISTRY_URL}/acro-planner-backend:latest
 
-# Deploy to Cloud Run
-echo -e "${YELLOW}Deploying to Cloud Run...${NC}"
-gcloud run deploy acro-planner-backend \
-  --image=${REGISTRY_URL}/acro-planner-backend:latest \
-  --region=${REGION} \
-  --service-account=${SERVICE_ACCOUNT} \
-  --platform=managed
+# Deploy Backend to Cloud Run
+echo -e "${YELLOW}Deploying backend to Cloud Run...${NC}"
+if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$SECRET_KEY" ]; then
+    echo -e "${YELLOW}Deploying with OAuth configuration...${NC}"
+    gcloud run deploy acro-planner-backend \
+      --image=${REGISTRY_URL}/acro-planner-backend:latest \
+      --region=${REGION} \
+      --service-account=${SERVICE_ACCOUNT} \
+      --platform=managed \
+      --allow-unauthenticated \
+      --set-env-vars="GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
+      --set-env-vars="GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" \
+      --set-env-vars="SECRET_KEY=${SECRET_KEY}" \
+      --set-env-vars="BASE_URL=https://acro-planner-backend-733697808355.us-central1.run.app"
+else
+    echo -e "${YELLOW}Deploying without OAuth configuration...${NC}"
+    gcloud run deploy acro-planner-backend \
+      --image=${REGISTRY_URL}/acro-planner-backend:latest \
+      --region=${REGION} \
+      --service-account=${SERVICE_ACCOUNT} \
+      --platform=managed \
+      --allow-unauthenticated
+fi
 
-echo -e "${GREEN}✅ Deployment complete!${NC}"
+echo -e "${GREEN}✅ Backend deployment complete!${NC}"
 
 # Get the service URL
-SERVICE_URL=$(gcloud run services describe acro-planner-backend --region=${REGION} --format='value(status.url)')
-echo -e "${GREEN}🌐 Service URL: ${SERVICE_URL}${NC}"
+BACKEND_SERVICE_URL=$(gcloud run services describe acro-planner-backend --region=${REGION} --format='value(status.url)')
+
+echo -e "${GREEN}🌐 Backend URL: ${BACKEND_SERVICE_URL}${NC}"
+echo -e "${GREEN}🌐 Admin Interface: ${BACKEND_SERVICE_URL}/admin${NC}"
 
 # Test the deployment
-echo -e "${YELLOW}Testing deployment...${NC}"
-curl -s ${SERVICE_URL}/health | jq '.' || echo "Health check endpoint: ${SERVICE_URL}/health"
+echo -e "${YELLOW}Testing backend deployment...${NC}"
+curl -s ${BACKEND_SERVICE_URL}/health | jq '.' || echo "Backend health check: ${BACKEND_SERVICE_URL}/health"
+
+echo -e "${GREEN}🎉 Backend deployed successfully!${NC}"
+echo ""
+echo -e "${YELLOW}The admin interface is available at:${NC}"
+echo "${BACKEND_SERVICE_URL}/admin"
+echo ""
+if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$SECRET_KEY" ]; then
+    echo -e "${GREEN}🔐 OAuth authentication is enabled for the admin interface${NC}"
+    echo -e "${YELLOW}Next steps:${NC}"
+    echo "1. Ensure Google OAuth redirect URI includes: ${BACKEND_SERVICE_URL}/auth/callback"
+    echo "2. Ensure authorized JavaScript origins include: ${BACKEND_SERVICE_URL}"
+    echo "3. Visit ${BACKEND_SERVICE_URL}/admin to access the protected admin interface"
+else
+    echo -e "${YELLOW}⚠️  OAuth authentication is NOT configured. The admin interface is unprotected.${NC}"
+    echo -e "${YELLOW}To enable OAuth protection:${NC}"
+    echo "1. Create admin/.env with GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and SECRET_KEY"
+    echo "2. Re-run the deployment script"
+fi

@@ -5,7 +5,7 @@ User-related API endpoints.
 from fastapi import APIRouter, HTTPException, Depends
 from sqlalchemy.orm import Session
 from sqlalchemy.exc import IntegrityError
-from ulid import ULID
+import uuid
 from datetime import datetime
 
 from .schemas import UserRegistration, UserResponse
@@ -30,7 +30,8 @@ def get_all_users(db: Session = Depends(get_db)):
                 id=user.id,
                 email=user.email,
                 name=user.name,
-                created_at=user.created_at.isoformat() if user.created_at else datetime.utcnow().isoformat()
+                created_at=user.created_at.isoformat() if user.created_at else datetime.utcnow().isoformat(),
+                error=None
             )
             for user in users
         ]
@@ -43,17 +44,24 @@ def add_user(user_data: UserRegistration, db: Session = Depends(get_db)):
     """
     Create a new user account.
     
-    Validates email uniqueness, password confirmation, creates user with ULID,
+    Validates email uniqueness, password confirmation, creates user with UUID,
     and stores securely hashed password in database.
     """
     try:
         # Check if email already exists
         existing_user = db.query(Users).filter(Users.email == user_data.email).first()
         if existing_user:
-            raise HTTPException(status_code=400, detail="Email already registered")
+            # Return error response with dummy values for required fields
+            return UserResponse(
+                id="",
+                email="",
+                name="",
+                created_at="",
+                error="Email already registered"
+            )
         
-        # Generate ULID for new user
-        user_id = str(ULID())
+        # Generate UUID for new user
+        user_id = str(uuid.uuid4())
         
         # Hash password with salt
         password_hash, salt = create_password_hash(user_data.password)
@@ -76,15 +84,28 @@ def add_user(user_data: UserRegistration, db: Session = Depends(get_db)):
             id=new_user.id,
             email=new_user.email,
             name=new_user.name,
-            created_at=new_user.created_at.isoformat() if new_user.created_at else datetime.utcnow().isoformat()
+            created_at=new_user.created_at.isoformat() if new_user.created_at else datetime.utcnow().isoformat(),
+            error=None
         )
         
     except IntegrityError as e:
         db.rollback()
         if "email" in str(e.orig):
-            raise HTTPException(status_code=400, detail="Email already registered")
+            return UserResponse(
+                id="",
+                email="",
+                name="",
+                created_at="",
+                error="Email already registered"
+            )
         else:
-            raise HTTPException(status_code=400, detail="Database constraint error")
+            return UserResponse(
+                id="",
+                email="",
+                name="",
+                created_at="",
+                error="Database constraint error"
+            )
     except HTTPException:
         # Re-raise HTTP exceptions as-is
         raise
