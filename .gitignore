@@ -49,3 +49,21 @@ htmlcov/
 # Logs
 *.log
 logs/
+
+# Abandoned SvelteKit admin files - we use static admin.html instead
+admin/src/routes/auth/
+admin/src/routes/login/
+admin/src/routes/test/
+admin/src/routes/api/
+admin/src/routes/+layout.js
+admin/src/routes/+page.server.ts
+admin/src/auth.ts
+admin/src/hooks.server.ts
+admin/Dockerfile
+admin/OAUTH_SETUP.md
+admin/.dockerignore
+admin/.env.example
+admin/static/favicon.png
+scripts/set-env-vars.sh
+studio_results_*.json
+DEPLOYMENT.md
