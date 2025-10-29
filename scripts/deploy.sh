@@ -41,6 +41,10 @@ cd terraform
 REGISTRY_URL=$(terraform output -raw artifact_registry_url 2>/dev/null || echo "")
 REGION=$(terraform output -raw region 2>/dev/null || echo "us-central1")
 SERVICE_ACCOUNT=$(terraform output -raw service_account_email 2>/dev/null || echo "")
+CLOUD_SQL_CONNECTION=$(terraform output -raw cloud_sql_connection_name 2>/dev/null || echo "")
+
+# Get database password from secret manager
+DATABASE_PASSWORD=$(gcloud secrets versions access latest --secret="acro-planner-mysql-password" 2>/dev/null || echo "")
 
 if [ -z "$REGISTRY_URL" ]; then
     echo -e "${RED}Error: Could not get Terraform outputs. Run 'terraform apply' first.${NC}"
@@ -64,26 +68,62 @@ docker push ${REGISTRY_URL}/acro-planner-backend:latest
 
 # Deploy Backend to Cloud Run
 echo -e "${YELLOW}Deploying backend to Cloud Run...${NC}"
+
+# Construct DATABASE_URL
+if [ -n "$CLOUD_SQL_CONNECTION" ] && [ -n "$DATABASE_PASSWORD" ]; then
+    DATABASE_URL="mysql+pymysql://acro_user:${DATABASE_PASSWORD}@/acro_planner?unix_socket=/cloudsql/${CLOUD_SQL_CONNECTION}"
+    echo -e "${GREEN}✅ Database configuration found${NC}"
+else
+    echo -e "${YELLOW}⚠️  Database configuration not found - running without database${NC}"
+    DATABASE_URL=""
+fi
+
 if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$SECRET_KEY" ]; then
     echo -e "${YELLOW}Deploying with OAuth configuration...${NC}"
-    gcloud run deploy acro-planner-backend \
-      --image=${REGISTRY_URL}/acro-planner-backend:latest \
-      --region=${REGION} \
-      --service-account=${SERVICE_ACCOUNT} \
-      --platform=managed \
-      --allow-unauthenticated \
-      --set-env-vars="GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
-      --set-env-vars="GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" \
-      --set-env-vars="SECRET_KEY=${SECRET_KEY}" \
-      --set-env-vars="BASE_URL=https://acro-planner-backend-733697808355.us-central1.run.app"
+    if [ -n "$DATABASE_URL" ]; then
+        gcloud run deploy acro-planner-backend \
+          --image=${REGISTRY_URL}/acro-planner-backend:latest \
+          --region=${REGION} \
+          --service-account=${SERVICE_ACCOUNT} \
+          --platform=managed \
+          --allow-unauthenticated \
+          --add-cloudsql-instances=${CLOUD_SQL_CONNECTION} \
+          --set-env-vars="GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
+          --set-env-vars="GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" \
+          --set-env-vars="SECRET_KEY=${SECRET_KEY}" \
+          --set-env-vars="DATABASE_URL=${DATABASE_URL}" \
+          --set-env-vars="BASE_URL=https://acro-planner-backend-733697808355.us-central1.run.app"
+    else
+        gcloud run deploy acro-planner-backend \
+          --image=${REGISTRY_URL}/acro-planner-backend:latest \
+          --region=${REGION} \
+          --service-account=${SERVICE_ACCOUNT} \
+          --platform=managed \
+          --allow-unauthenticated \
+          --set-env-vars="GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
+          --set-env-vars="GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" \
+          --set-env-vars="SECRET_KEY=${SECRET_KEY}" \
+          --set-env-vars="BASE_URL=https://acro-planner-backend-733697808355.us-central1.run.app"
+    fi
 else
     echo -e "${YELLOW}Deploying without OAuth configuration...${NC}"
-    gcloud run deploy acro-planner-backend \
-      --image=${REGISTRY_URL}/acro-planner-backend:latest \
-      --region=${REGION} \
-      --service-account=${SERVICE_ACCOUNT} \
-      --platform=managed \
-      --allow-unauthenticated
+    if [ -n "$DATABASE_URL" ]; then
+        gcloud run deploy acro-planner-backend \
+          --image=${REGISTRY_URL}/acro-planner-backend:latest \
+          --region=${REGION} \
+          --service-account=${SERVICE_ACCOUNT} \
+          --platform=managed \
+          --allow-unauthenticated \
+          --add-cloudsql-instances=${CLOUD_SQL_CONNECTION} \
+          --set-env-vars="DATABASE_URL=${DATABASE_URL}"
+    else
+        gcloud run deploy acro-planner-backend \
+          --image=${REGISTRY_URL}/acro-planner-backend:latest \
+          --region=${REGION} \
+          --service-account=${SERVICE_ACCOUNT} \
+          --platform=managed \
+          --allow-unauthenticated
+    fi
 fi
 
 echo -e "${GREEN}✅ Backend deployment complete!${NC}"

@@ -70,7 +70,7 @@
 		console.log('Starting to load users...');
 		try {
 			console.log('Making API call to /users');
-			const response = await api.get<User[]>('/users');
+			const response = await api.get<User[]>('/users/');
 			console.log('API response:', response);
 			if (response.data) {
 				users = response.data;

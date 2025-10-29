@@ -353,7 +353,7 @@
         // Load users from the API
         async function loadUsers() {
             try {
-                const response = await fetch(`${API_BASE}/users`);
+                const response = await fetch(`${API_BASE}/users/`);
                 const users = await response.json();
                 
                 displayUsers(users);
@@ -413,7 +413,7 @@
             };
 
             try {
-                const response = await fetch(`${API_BASE}/users`, {
+                const response = await fetch(`${API_BASE}/users/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
