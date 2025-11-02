@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  lint-and-test:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.13'
+    
+    - name: Install Poetry
+      uses: snok/install-poetry@v1
+      with:
+        version: latest
+        virtualenvs-create: false
+    
+    - name: Install dependencies
+      run: poetry install --with dev
+      working-directory: ./server
+    
+    - name: Run ruff linter
+      run: poetry run ruff check .
+      working-directory: ./server
+    
+    - name: Run mypy type checker
+      run: poetry run mypy .
+      working-directory: ./server
+    
+    - name: Run tests
+      run: poetry run pytest --cov --cov-report=xml --cov-report=term
+      working-directory: ./server
+    
+    - name: Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./server/coverage.xml
+        flags: unittests
+        name: codecov-umbrella
+

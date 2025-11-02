@@ -1,5 +1,22 @@
 # Google Cloud Build configuration
 steps:
+  # Install dependencies and run linting/type checking
+  - name: 'python:3.13'
+    entrypoint: 'bash'
+    args:
+      - '-c'
+      - |
+        pip install poetry
+        poetry config virtualenvs.create false
+        poetry install --with dev
+        echo "Running ruff linter..."
+        poetry run ruff check . || exit 1
+        echo "Running mypy type checker..."
+        poetry run mypy . || exit 1
+        echo "Running tests..."
+        poetry run pytest --cov --cov-report=term || exit 1
+    dir: 'server'
+
   # Build the container image
   - name: 'gcr.io/cloud-builders/docker'
     args: ['build', '-t', 'gcr.io/$PROJECT_ID/acro-planner-backend:$COMMIT_SHA', '-t', 'gcr.io/$PROJECT_ID/acro-planner-backend:latest', '.']
