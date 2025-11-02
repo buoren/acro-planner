@@ -1,37 +1,52 @@
 # Claude Context - Acro Planner Project
 
 ## Project Overview
-Complete Acro Planner application with FastAPI backend deployed to Google Cloud, Flutter mobile app, and SvelteKit admin interface.
+Complete Acro Planner application with FastAPI backend deployed to Google Cloud, Flutter mobile/web app deployed to GCS, and admin interface served from backend.
 
 ## 🚀 CURRENT STATUS: FULLY DEPLOYED AND OPERATIONAL
 
-### Live URLs
+### Live Production URLs
 - **Production API**: https://acro-planner-backend-733697808355.us-central1.run.app
 - **Health Check**: https://acro-planner-backend-733697808355.us-central1.run.app/health
-- **Flutter App**: Running locally with production API integration
-- **Admin Interface**: SvelteKit admin running locally with production API integration
+- **Admin Interface**: https://acro-planner-backend-733697808355.us-central1.run.app/admin (OAuth-protected)
+- **Flutter Web App**: https://storage.googleapis.com/acro-planner-flutter-app-733697808355/index.html
 
 ## 🔥 CRITICAL DEPLOYMENT WORKFLOW
 **ALWAYS DEPLOY TO PRODUCTION AFTER EVERY FIX UNLESS TOLD OTHERWISE**
 
-### Primary Deployment Tool
-- **Use `./scripts/deploy.sh`** - This is the main deployment script, NOT terraform
-- Terraform is only used for infrastructure setup, NOT for deployments
-- The deploy.sh script handles building, pushing Docker images, and deploying to Cloud Run
+### ⚠️ CRITICAL RULE: NO CHANGE IS COMPLETE UNTIL DEPLOYED
+- **Code changes are NOT considered tested or done until deployed to production**
+- **Always deploy and verify in production environment before marking tasks complete**
+- **Never assume local testing is sufficient - production deployment is the final validation**
+
+### Primary Deployment Tools
+1. **Backend Deployment**: `./scripts/deploy.sh`
+   - Builds and deploys backend to Cloud Run
+   - Includes admin interface as static files
+   - Updates OAuth environment variables
+   - NOT terraform (terraform is only for infrastructure)
+
+2. **Frontend Deployment**: `./scripts/deploy-frontend.sh`
+   - Builds Flutter web app with correct base href
+   - Deploys to Google Cloud Storage bucket
+   - Configures public access for static hosting
 
 ### Testing Protocol
 - **ALWAYS test fixes against production endpoints** after deployment
+- **NO TASK IS COMPLETE without production deployment and verification**
 - Verify functionality with live production URLs
 - Ensure changes are working in the real environment, not just locally
+- Mark todos as completed ONLY after successful production deployment
 
 ### Deployment Commands
 ```bash
 # Backend deployment (from project root)
 ./scripts/deploy.sh
 
-# Admin interface deployment (if needed)
-cd admin && npm run build
-# Then deploy admin Docker container to Cloud Run
+# Flutter web app deployment (from project root)
+./scripts/deploy-frontend.sh
+
+# Both can be run independently as needed
 ```
 
 ## Project Structure (Complete)
@@ -58,7 +73,7 @@ acro-planner/
 │       │       └── api_service.dart  # Production API client
 │       ├── .env             # Production API configuration
 │       └── pubspec.yaml     # Flutter dependencies
-├── admin/                    # SvelteKit admin interface (NEW)
+├── admin/                    # SvelteKit admin interface (LOCAL DEV ONLY)
 │   ├── src/
 │   │   ├── routes/
 │   │   │   └── +page.svelte # Admin dashboard
@@ -67,7 +82,12 @@ acro-planner/
 │   │   └── app.html         # App template
 │   ├── package.json         # Node.js dependencies
 │   ├── svelte.config.js     # SvelteKit configuration
-│   └── tsconfig.json        # TypeScript configuration
+│   ├── tsconfig.json        # TypeScript configuration
+│   └── .env                 # OAuth credentials
+├── scripts/                  # Deployment scripts
+│   ├── deploy.sh            # Backend deployment to Cloud Run
+│   ├── deploy-frontend.sh   # Flutter web deployment to GCS
+│   └── set-env-vars.sh      # OAuth environment setup
 └── CLAUDE.md                # This context file
 ```
 
@@ -76,7 +96,8 @@ acro-planner/
 ### Google Cloud Project: `acro-session-planner`
 - **Cloud Run Service**: acro-planner-backend (us-central1)
 - **Cloud SQL**: MySQL 8.0 instance with automated backups
-- **Artifact Registry**: Docker container registry
+- **Artifact Registry**: Docker container registry for backend images
+- **Cloud Storage Bucket**: acro-planner-flutter-app-733697808355 (static web hosting)
 - **Secret Manager**: Database password management
 - **IAM**: Service accounts with least privilege access
 
@@ -91,9 +112,11 @@ terraform apply  # ✅ COMPLETED SUCCESSFULLY
 
 ### Key Features
 - ✅ FastAPI with async/await support
+- ✅ OAuth 2.0 authentication (Google provider)
 - ✅ CORS middleware for web client support
 - ✅ SQLAlchemy ORM with Cloud SQL MySQL
 - ✅ Health check endpoint
+- ✅ Static admin interface served at /admin
 - ✅ Environment-based configuration
 - ✅ Docker containerization
 - ✅ Production deployment on Cloud Run
@@ -121,8 +144,13 @@ app.add_middleware(
 ### API Endpoints
 - `GET /` - Hello World message
 - `GET /health` - Health check (returns `{"status": "healthy"}`)
+- `GET /admin` - Admin interface (OAuth-protected, redirects to login)
+- `GET /login` - OAuth login page
+- `GET /auth/google` - Google OAuth callback
+- `POST /api/users` - Create new user
+- `GET /api/users` - List all users (paginated)
 
-## 📱 Flutter Client (WORKING)
+## 📱 Flutter Client (DEPLOYED)
 
 ### Features
 - ✅ Material Design 3 with light/dark theme
@@ -131,6 +159,7 @@ app.add_middleware(
 - ✅ HTTP client configured for production API
 - ✅ Environment-based configuration
 - ✅ Cross-platform (mobile, web, desktop)
+- ✅ Web version deployed to Google Cloud Storage
 
 ### Configuration (.env)
 ```
@@ -139,20 +168,23 @@ API_TIMEOUT=30000
 ENVIRONMENT=production
 ```
 
-### Running Flutter App
-```bash
-cd clients/acro_planner_app
-flutter pub get
-flutter run -d chrome    # For web
-flutter run -d ios       # For iOS
-flutter run -d android   # For Android
-```
+### Access Methods
+- **Web (Production)**: https://storage.googleapis.com/acro-planner-flutter-app-733697808355/index.html
+- **Local Development**:
+  ```bash
+  cd clients/acro_planner_app
+  flutter pub get
+  flutter run -d chrome    # For web
+  flutter run -d ios       # For iOS
+  flutter run -d android   # For Android
+  ```
 
 ## 🖥️ Admin Interface
 
 ### Production (Deployed)
 - **URL**: https://acro-planner-backend-733697808355.us-central1.run.app/admin
-- **Type**: Static HTML served directly from backend
+- **Type**: Static HTML served directly from backend (`server/static/admin.html`)
+- **Authentication**: OAuth 2.0 with Google provider
 - **Deployment**: Automatically deployed with backend using `./scripts/deploy.sh`
 
 ### Local Development (Optional)
@@ -164,29 +196,37 @@ npm install
 npm run dev  # Starts on http://localhost:5173
 ```
 
-**Note**: This SvelteKit version is for development only and is NOT deployed to production.
+**Note**: This SvelteKit version is for development only and is NOT deployed to production. The production admin uses the static HTML file in `server/static/`.
 
 ## 🔐 Security & Configuration
 
-### CORS Resolution
+### OAuth 2.0 Authentication
+- **Provider**: Google OAuth
+- **Client ID**: `733697808355-6e0pbdfaedl0ito1ucklgo1okq2k727s.apps.googleusercontent.com`
+- **Protected Routes**: `/admin` endpoint requires authentication
+- **Session Management**: Encrypted sessions with AUTH_SECRET
+
+### CORS Configuration
 - ✅ Added CORS middleware to FastAPI backend
 - ✅ Allows cross-origin requests from web clients
-- ✅ Properly configured for both Flutter web and SvelteKit admin
+- ✅ Properly configured for Flutter web app
 
 ### Environment Configuration
-- **Development**: Local servers with API fallback
-- **Production**: All frontends connect to deployed Cloud Run API
+- **Development**: Local servers with hot reload
+- **Production**: All services deployed to Google Cloud
 - **Database**: Cloud SQL MySQL with automated backups
+- **Storage**: GCS bucket for Flutter web static hosting
 
 ## 🎯 Current Capabilities
 
 ### What's Working Right Now
-1. **Backend API**: Fully deployed and responding
+1. **Backend API**: Fully deployed and responding with OAuth authentication
 2. **Health Monitoring**: All clients show real-time connection status
-3. **Flutter App**: Complete mobile/web app with Material Design
-4. **Admin Dashboard**: Professional SvelteKit interface
+3. **Flutter Web App**: Deployed to GCS with Material Design 3 UI
+4. **Admin Dashboard**: OAuth-protected interface served from backend
 5. **Infrastructure**: Production-ready Google Cloud setup
-6. **CORS**: Cross-origin requests working for all web clients
+6. **Static Hosting**: GCS bucket serving Flutter web app
+7. **CORS**: Cross-origin requests working for all web clients
 
 ### Ready for Development
 - ✅ Authentication system

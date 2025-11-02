@@ -98,8 +98,18 @@ class Hosts(Base):
     
     id = Column(String(36), primary_key=True)
     attendee_id = Column(String(36), ForeignKey("attendees.id"), nullable=False)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     photos = Column(JSON)
     links = Column(JSON)
+
+class Selections(Base):
+    """Selections model for user's choices of events."""
+    __tablename__ = "selections"
+    
+    id = Column(String(36), primary_key=True)
+    attendee_id = Column(String(36), ForeignKey("attendees.id"), nullable=False)
+    event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
+    is_selected = Column(Boolean, default=False)
     
 
 # Example of how to use the models in your FastAPI app:
