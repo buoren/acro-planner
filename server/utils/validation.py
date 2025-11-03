@@ -3,7 +3,6 @@ Validation utilities.
 """
 
 import re
-from typing import Optional
 
 
 def is_valid_email(email: str) -> bool:
@@ -20,7 +19,7 @@ def is_valid_email(email: str) -> bool:
     return re.match(pattern, email) is not None
 
 
-def validate_password_strength(password: str) -> Optional[str]:
+def validate_password_strength(password: str) -> str | None:
     """
     Validate password strength and return error message if invalid.
     
@@ -32,16 +31,16 @@ def validate_password_strength(password: str) -> Optional[str]:
     """
     if len(password) < 8:
         return "Password must be at least 8 characters long"
-    
+
     if not re.search(r'[A-Z]', password):
         return "Password must contain at least one uppercase letter"
-    
+
     if not re.search(r'[a-z]', password):
         return "Password must contain at least one lowercase letter"
-    
+
     if not re.search(r'\d', password):
         return "Password must contain at least one digit"
-    
+
     return None
 
 
@@ -57,7 +56,7 @@ def sanitize_name(name: str) -> str:
     """
     # Remove extra whitespace and strip
     cleaned = re.sub(r'\s+', ' ', name.strip())
-    
+
     # Capitalize first letter of each word
     return cleaned.title()
 
@@ -75,7 +74,7 @@ def validate_ulid(ulid_str: str) -> bool:
     # ULID should be 26 characters, base32 encoded
     if len(ulid_str) != 26:
         return False
-    
+
     # Check if all characters are valid base32 (Crockford's Base32)
     valid_chars = set('0123456789ABCDEFGHJKMNPQRSTVWXYZ')
     return all(c in valid_chars for c in ulid_str.upper())

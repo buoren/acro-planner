@@ -41,12 +41,12 @@ def test_create_user(test_client, db_session):
         "password": "password123",
         "password_confirm": "password123"
     }
-    
+
     response = test_client.post("/users/register", json=user_data)
-    
+
     # Should succeed (201 or 200 depending on implementation)
     assert response.status_code in [status.HTTP_200_OK, status.HTTP_201_CREATED]
-    
+
     # Check user was created in database
     from models import Users
     user = db_session.query(Users).filter(Users.email == "newuser@test.com").first()
@@ -65,25 +65,25 @@ def test_user_registration_duplicate_email(test_client, test_user_attendee):
         "password": "password123",
         "password_confirm": "password123"
     }
-    
+
     response = test_client.post("/users/register", json=user_data)
-    
+
     # Should fail with appropriate error
     assert response.status_code in [
         status.HTTP_400_BAD_REQUEST,
         status.HTTP_409_CONFLICT
     ]
-    
+
     # Check error message mentions email
     response_data = response.json()
-    assert "email" in str(response_data).lower() or "error" in response_data
+    assert "email" in str(response_data.get("detail", "")).lower()
 
 
 @pytest.mark.integration
 def test_fixture_user_creation(db_session, test_user_attendee):
     """Example test showing fixture user is created in database."""
     from models import Users
-    
+
     user = db_session.query(Users).filter(Users.id == test_user_attendee.id).first()
     assert user is not None
     assert user.email == "attendee@test.com"

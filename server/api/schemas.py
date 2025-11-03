@@ -2,8 +2,8 @@
 Pydantic models for API requests and responses.
 """
 
-from pydantic import BaseModel, field_validator, EmailStr, ValidationInfo
-from typing import Optional
+
+from pydantic import BaseModel, EmailStr, ValidationInfo, field_validator
 
 
 class UserRegistration(BaseModel):
@@ -12,21 +12,21 @@ class UserRegistration(BaseModel):
     name: str
     password: str
     password_confirm: str
-    
+
     @field_validator('name')
     @classmethod
     def name_must_not_be_empty(cls, v: str) -> str:
         if not v or not v.strip():
             raise ValueError('Name cannot be empty')
         return v.strip()
-    
+
     @field_validator('password')
     @classmethod
     def password_strength(cls, v: str) -> str:
         if len(v) < 8:
             raise ValueError('Password must be at least 8 characters long')
         return v
-    
+
     @field_validator('password_confirm')
     @classmethod
     def passwords_match(cls, v: str, info: ValidationInfo) -> str:
@@ -41,4 +41,3 @@ class UserResponse(BaseModel):
     email: str
     name: str
     created_at: str
-    error: Optional[str] = None

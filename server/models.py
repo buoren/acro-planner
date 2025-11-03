@@ -5,15 +5,13 @@ This file contains example models to demonstrate the structure.
 Replace with your actual models as needed.
 """
 
-from sqlalchemy import Column, Integer, String, Text, DateTime, Boolean, ForeignKey, Enum, Numeric, JSON
-import sqlalchemy.types as types
-from sqlalchemy.orm import relationship
+
+from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String
 from sqlalchemy.sql import func
-import enum
-import uuid
 
 # Import Base from database.py to share the same metadata
 from database import Base
+
 
 class Users(Base):
     """Users model for authentication and profile management."""
@@ -85,7 +83,7 @@ class EventSlot(Base):
 class Attendees(Base):
     """Attendees model for acrobatics classes/sessions."""
     __tablename__ = "attendees"
-    
+
     id = Column(String(36), primary_key=True)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
@@ -95,7 +93,7 @@ class Attendees(Base):
 class Hosts(Base):
     """Hosts model for acrobatics classes/sessions."""
     __tablename__ = "hosts"
-    
+
     id = Column(String(36), primary_key=True)
     attendee_id = Column(String(36), ForeignKey("attendees.id"), nullable=False)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
@@ -105,12 +103,12 @@ class Hosts(Base):
 class Selections(Base):
     """Selections model for user's choices of events."""
     __tablename__ = "selections"
-    
+
     id = Column(String(36), primary_key=True)
     attendee_id = Column(String(36), ForeignKey("attendees.id"), nullable=False)
     event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
     is_selected = Column(Boolean, default=False)
-    
+
 
 # Example of how to use the models in your FastAPI app:
 """

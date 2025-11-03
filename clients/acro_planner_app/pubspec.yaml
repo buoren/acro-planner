@@ -43,6 +43,9 @@ dependencies:
   
   # Environment configuration
   flutter_dotenv: ^6.0.0
+  
+  # Google Sign-In for OAuth authentication
+  google_sign_in: ^6.2.1
 
 dev_dependencies:
   flutter_test:
@@ -54,6 +57,14 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  
+  # Integration testing
+  integration_test:
+    sdk: flutter
+  
+  # Mocking for unit/widget tests
+  mockito: ^5.4.4
+  build_runner: ^2.4.8
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

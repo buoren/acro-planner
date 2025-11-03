@@ -4,7 +4,6 @@ Authentication and security utilities.
 
 import hashlib
 import secrets
-from typing import Tuple
 
 
 def generate_salt() -> str:
@@ -25,13 +24,13 @@ def hash_password(password: str, salt: str) -> str:
     """
     # Combine password and salt
     salted_password = password + salt
-    
+
     # Hash using SHA-256
     hash_object = hashlib.sha256(salted_password.encode())
     return hash_object.hexdigest()
 
 
-def create_password_hash(password: str) -> Tuple[str, str]:
+def create_password_hash(password: str) -> tuple[str, str]:
     """
     Create a password hash with a new salt.
     

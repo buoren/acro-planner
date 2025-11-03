@@ -5,14 +5,15 @@ This document outlines the implementation plan for building out the complete Acr
 ## Overview
 
 **Priority User Flows (Complete in Order):**
-1. ✅ User sign up (public-facing)
-2. User roles system (admin, host, attendee - default attendee)
-3. Host sign up with admin approval workflow
-4. Admin can promote users to admin role
-5. Admin CRUD for events, equipment, locations, capabilities, event slots
-6. Attendees can browse available events
-7. Attendees can filter events by prerequisites
-8. Attendees can manage selections (series of possible selections)
+1. ✅ User sign up (public-facing) - **COMPLETED**
+2. ✅ User authentication & profile page - **COMPLETED**  
+3. User roles system (admin, host, attendee - default attendee)
+4. Host sign up with admin approval workflow
+5. Admin can promote users to admin role
+6. Admin CRUD for events, equipment, locations, capabilities, event slots
+7. Attendees can browse available events
+8. Attendees can filter events by prerequisites
+9. Attendees can manage selections (series of possible selections)
 
 ---
 
@@ -776,19 +777,67 @@ For each Backend API Phase:
 
 ## Current Status
 
-✅ **Completed:**
-- User management API (GET /users/, POST /users/register) - but needs to be public
-- User management UI (basic)
-- Authentication system (OAuth + password)
-- Database models defined
-- Database migration scripts
+✅ **Completed Infrastructure & Authentication:**
+- ✅ Complete Google Cloud infrastructure (Terraform deployed)
+- ✅ FastAPI backend deployed to Cloud Run with health checks
+- ✅ Google OAuth authentication system with session management
+- ✅ Admin interface with OAuth protection (`?admin=true` flag)
+- ✅ Flutter web app with Material Design 3 and authentication
+- ✅ Cross-domain authentication (Flutter app on GCS, backend on Cloud Run)
+- ✅ Production deployment scripts (`./scripts/deploy.sh` for backend, `./scripts/deploy-frontend.sh` for Flutter)
+- ✅ CORS middleware properly configured for web clients
+- ✅ Database models defined and migration scripts created
+- ✅ User registration API (POST /users/register) - public endpoint working
+- ✅ User management API (GET /users/, GET /users/{id}, basic CRUD)
 
-🔄 **Next Steps:**
-- Phase 1: User Roles & Permissions System
-- Phase 2: Public User Registration
+✅ **Completed Frontend & UI:**
+- ✅ Flutter web app with profile page functionality
+- ✅ Google OAuth integration with return URL handling
+- ✅ User authentication state management and display
+- ✅ Profile page: "Hi, [name]!" greeting + sign out button
+- ✅ Admin panel accessible via OAuth with admin flag
+- ✅ Production deployment with timestamped subdirectories for cache busting
+- ✅ Connection status monitoring and health checks
+
+✅ **Completed DevOps & Deployment:**
+- ✅ Docker containerization for backend
+- ✅ Google Cloud Run deployment with auto-scaling
+- ✅ Google Cloud SQL (MySQL) with automated backups
+- ✅ Artifact Registry for Docker images
+- ✅ Secret Manager for database passwords
+- ✅ IAM roles and service accounts properly configured
+- ✅ Environment-based configuration (development/production)
+- ✅ Deployment workflow documentation in CLAUDE.md
+
+### 🌐 **Live Production URLs:**
+- **Backend API**: https://acro-planner-backend-733697808355.us-central1.run.app
+- **Admin Interface**: https://acro-planner-backend-733697808355.us-central1.run.app/admin (use `?admin=true` for OAuth)
+- **Flutter App**: https://storage.googleapis.com/acro-planner-flutter-app-733697808355/release_20251103_202322/index.html
+- **Health Check**: https://acro-planner-backend-733697808355.us-central1.run.app/health
+
+### ✨ **Working Features:**
+- ✅ User registration and Google OAuth authentication
+- ✅ Cross-domain authentication between Flutter app and backend
+- ✅ Profile page with personalized greeting and sign out
+- ✅ Admin panel access with role-based OAuth flow
+- ✅ Health monitoring and connection status
+- ✅ Production-ready infrastructure with auto-scaling
+
+🔄 **Currently Working On:**
+- ✅ OAuth flow fixes (default to Flutter app, admin flag support)
+- ✅ Profile page implementation and deployment
+
+🔄 **Next Steps (Backend API Implementation):**
+- Phase 1: User Roles & Permissions System (extend current user system)
+- Phase 2: Host Approval Workflow  
+- Phase 3: Admin User Management
+- Phase 4: Content Management APIs (Capabilities, Equipment, Locations, Events)
 
 ⏳ **Future Phases:**
-- All other phases listed above
+- Event browsing and filtering
+- Selections management
+- Advanced frontend features
+- Mobile app enhancements
 
 ---
 

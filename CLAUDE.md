@@ -27,9 +27,11 @@ Complete Acro Planner application with FastAPI backend deployed to Google Cloud,
    - NOT terraform (terraform is only for infrastructure)
 
 2. **Frontend Deployment**: `./scripts/deploy-frontend.sh`
-   - Builds Flutter web app with correct base href
-   - Deploys to Google Cloud Storage bucket
+   - Builds Flutter web app with timestamped subdirectory base href
+   - Deploys to Google Cloud Storage bucket with cache-busting subdirectories
    - Configures public access for static hosting
+   - **NEVER manually run flutter build + gsutil - ALWAYS use this script**
+   - **SUBDIRECTORY APPROACH MANDATORY** - ensures proper resource loading
 
 ### Testing Protocol
 - **ALWAYS test fixes against production endpoints** after deployment
