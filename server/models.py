@@ -6,7 +6,7 @@ Replace with your actual models as needed.
 """
 
 
-from sqlalchemy import JSON, Boolean, Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import JSON, Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.sql import func
 
 # Import Base from database.py to share the same metadata
@@ -61,6 +61,7 @@ class Events(Base):
     __tablename__ = "events"
 
     id = Column(String(36), primary_key=True)
+    convention_id = Column(String(36), ForeignKey("conventions.id"), nullable=False)
     name = Column(String(200), nullable=False)
     description = Column(String(1000))
     prerequisite_ids = Column(JSON)
@@ -80,14 +81,31 @@ class EventSlot(Base):
     day_number = Column(Integer, nullable=False)
 
 
+class Conventions(Base):
+    """Conventions model for acrobatics conventions/gatherings."""
+    __tablename__ = "conventions"
+
+    id = Column(String(36), primary_key=True)
+    name = Column(String(255), nullable=False)
+    description = Column(Text)
+    start_date = Column(Date)
+    end_date = Column(Date)
+    location = Column(String(255))
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
 class Attendees(Base):
-    """Attendees model for acrobatics classes/sessions."""
+    """Attendees model for users attending acrobatics conventions."""
     __tablename__ = "attendees"
 
     id = Column(String(36), primary_key=True)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    event_id = Column(String(36), ForeignKey("events.id"), nullable=True)  # Nullable for general attendee role
+    convention_id = Column(String(36), ForeignKey("conventions.id"), nullable=True)  # Nullable for general attendee role
     is_registered = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Hosts(Base):

@@ -167,29 +167,29 @@ def add_host_role(db: Session, user_id: str, attendee_id: str = None) -> Hosts:
     return host
 
 
-def add_attendee_role(db: Session, user_id: str, event_id: str = None) -> Attendees:
+def add_attendee_role(db: Session, user_id: str, convention_id: str = None) -> Attendees:
     """
     Add attendee role to a user.
     
     Args:
         db: Database session
         user_id: User ID to add as attendee
-        event_id: Event ID (optional, for event-specific attendee record)
+        convention_id: Convention ID (optional, for convention-specific attendee record)
         
     Returns:
         Created Attendees record
         
     Note:
-        If event_id is None, creates a general attendee record.
-        Users can have multiple attendee records for different events.
+        If convention_id is None, creates a general attendee record.
+        Users can have multiple attendee records for different conventions.
     """
     import ulid
     
-    # For general attendee role (no specific event), check if already exists
-    if not event_id:
+    # For general attendee role (no specific convention), check if already exists
+    if not convention_id:
         existing_attendee = db.query(Attendees).filter(
             Attendees.user_id == user_id,
-            Attendees.event_id.is_(None)
+            Attendees.convention_id.is_(None)
         ).first()
         if existing_attendee:
             return existing_attendee
@@ -198,7 +198,7 @@ def add_attendee_role(db: Session, user_id: str, event_id: str = None) -> Attend
     attendee = Attendees(
         id=str(ulid.new()),
         user_id=user_id,
-        event_id=event_id,
+        convention_id=convention_id,
         is_registered=False
     )
     
