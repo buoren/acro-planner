@@ -15,8 +15,9 @@ from sqlalchemy.pool import StaticPool
 # Import before creating test database to register models
 from database import Base, get_db
 from main import app
-from models import Users
+from models import Users, Attendees, Hosts, Admins
 from utils.auth import create_password_hash
+from utils.roles import add_attendee_role, add_host_role, add_admin_role
 
 # Test database configuration - use SQLite in-memory for speed
 TEST_DATABASE_URL = "sqlite:///:memory:"
@@ -87,20 +88,19 @@ def test_user_attendee(db_session):
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+    
+    # Add attendee role
+    add_attendee_role(db_session, user_id)
+    
     return user
 
 
 @pytest.fixture
 def test_user_host(db_session):
-    """
-    Create a test user with 'host' role.
-    Note: role and is_approved_host fields will be added in Phase 1.
-    For now, this creates a regular user that will be upgraded in Phase 1 tests.
-    """
+    """Create a test user with 'host' and 'attendee' roles."""
     user_id = str(ulid.new())
     password_hash, salt = create_password_hash("testpassword123")
 
-    # TODO: Add role="host" and is_approved_host=True when Phase 1 is implemented
     user = Users(
         id=user_id,
         email="host@test.com",
@@ -111,20 +111,21 @@ def test_user_host(db_session):
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+    
+    # Add attendee role first (hosts must be attendees)
+    attendee = add_attendee_role(db_session, user_id)
+    # Then add host role
+    add_host_role(db_session, user_id, attendee.id)
+    
     return user
 
 
 @pytest.fixture
 def test_user_admin(db_session):
-    """
-    Create a test user with 'admin' role.
-    Note: role and is_approved_host fields will be added in Phase 1.
-    For now, this creates a regular user that will be upgraded in Phase 1 tests.
-    """
+    """Create a test user with 'admin' role."""
     user_id = str(ulid.new())
     password_hash, salt = create_password_hash("testpassword123")
 
-    # TODO: Add role="admin" and is_approved_host=True when Phase 1 is implemented
     user = Users(
         id=user_id,
         email="admin@test.com",
@@ -135,6 +136,10 @@ def test_user_admin(db_session):
     db_session.add(user)
     db_session.commit()
     db_session.refresh(user)
+    
+    # Add admin role
+    add_admin_role(db_session, user_id)
+    
     return user
 
 
@@ -142,20 +147,36 @@ def create_auth_override(user, db_session):
     """Helper to create authentication override for a user."""
     from models import Users
     from oauth import get_current_user
+    from utils.roles import get_user_with_roles
 
-    # Fetch user from database to ensure we have latest data (including role if it exists)
-    db_user = db_session.query(Users).filter(Users.id == user.id).first()
-
-    user_dict = {
-        'email': db_user.email,
-        'name': db_user.name,
-        'sub': db_user.id,
-        'auth_method': 'test'
-    }
-
-    # Add role if it exists (will be available after Phase 1)
-    if hasattr(db_user, 'role'):
-        user_dict['role'] = db_user.role
+    # Get user with role information
+    user_with_roles = get_user_with_roles(db_session, user.id)
+    
+    if user_with_roles:
+        user_dict = {
+            'email': user_with_roles['email'],
+            'name': user_with_roles['name'],
+            'sub': user_with_roles['id'],
+            'id': user_with_roles['id'],
+            'roles': user_with_roles['roles'],
+            'is_admin': user_with_roles['is_admin'],
+            'is_host': user_with_roles['is_host'],
+            'is_attendee': user_with_roles['is_attendee'],
+            'auth_method': 'test'
+        }
+    else:
+        # Fallback if role lookup fails
+        user_dict = {
+            'email': user.email,
+            'name': user.name,
+            'sub': user.id,
+            'id': user.id,
+            'roles': [],
+            'is_admin': False,
+            'is_host': False,
+            'is_attendee': False,
+            'auth_method': 'test'
+        }
 
     def mock_get_current_user(request):
         return user_dict
@@ -167,42 +188,59 @@ def create_auth_override(user, db_session):
 def authenticated_client_attendee(test_client, test_user_attendee, db_session):
     """Test client authenticated as attendee user."""
     from oauth import get_current_user
+    from api.auth import require_auth
 
     mock_func = create_auth_override(test_user_attendee, db_session)
+    
+    # Mock both the oauth function and the auth dependency
     app.dependency_overrides[get_current_user] = mock_func
+    app.dependency_overrides[require_auth] = lambda: mock_func(None)  # Return user dict directly
 
     yield test_client
 
+    # Clean up
     if get_current_user in app.dependency_overrides:
         del app.dependency_overrides[get_current_user]
+    if require_auth in app.dependency_overrides:
+        del app.dependency_overrides[require_auth]
 
 
 @pytest.fixture
 def authenticated_client_host(test_client, test_user_host, db_session):
     """Test client authenticated as host user."""
     from oauth import get_current_user
+    from api.auth import require_auth
 
     mock_func = create_auth_override(test_user_host, db_session)
+    
     app.dependency_overrides[get_current_user] = mock_func
+    app.dependency_overrides[require_auth] = lambda: mock_func(None)
 
     yield test_client
 
     if get_current_user in app.dependency_overrides:
         del app.dependency_overrides[get_current_user]
+    if require_auth in app.dependency_overrides:
+        del app.dependency_overrides[require_auth]
 
 
 @pytest.fixture
 def authenticated_client_admin(test_client, test_user_admin, db_session):
     """Test client authenticated as admin user."""
     from oauth import get_current_user
+    from api.auth import require_auth
 
     mock_func = create_auth_override(test_user_admin, db_session)
+    
     app.dependency_overrides[get_current_user] = mock_func
+    app.dependency_overrides[require_auth] = lambda: mock_func(None)
 
     yield test_client
 
     if get_current_user in app.dependency_overrides:
         del app.dependency_overrides[get_current_user]
+    if require_auth in app.dependency_overrides:
+        del app.dependency_overrides[require_auth]
 
 
 @pytest.fixture

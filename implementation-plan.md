@@ -68,6 +68,98 @@ This document outlines the implementation plan for building out the complete Acr
 
 ---
 
+### Phase 1.5: CRITICAL SECURITY FIXES 🔒
+
+**⚠️ PRIORITY: Fix production security vulnerabilities identified during Phase 1 implementation**
+
+#### 1.5.0 Security Assessment & Tests (WRITE FIRST - BEFORE IMPLEMENTATION)
+- [ ] Create test file `tests/test_security.py`
+- [ ] Write test for unauthorized access to `GET /users/` endpoint (should require auth)
+- [ ] Write test for API endpoint authentication requirements
+- [ ] Write test for CORS origin restrictions
+- [ ] Write test for rate limiting on public endpoints
+- [ ] Write test for session-based authentication validation
+- [ ] Write test for API key authentication (if implemented)
+- [ ] Write test for frontend authorization validation
+- [ ] Write integration test for complete authentication flow
+- [ ] Write test for auth bypass prevention
+
+#### 1.5.1 Immediate Authentication Protection
+- [ ] Add `require_auth` dependency to `GET /users/` endpoint (currently unprotected!)
+- [ ] Add `require_auth` dependency to all user management endpoints
+- [ ] Update existing endpoints to require authentication by default
+- [ ] Add explicit `@public` decorator for intentionally public endpoints
+- [ ] Audit all endpoints for proper authentication requirements
+
+#### 1.5.2 CORS & Origin Security
+- [ ] Replace CORS `allow_origins=["*"]` with specific allowed origins
+- [ ] Add development and production origin configurations
+- [ ] Whitelist only known frontend domains:
+  - `https://storage.googleapis.com/acro-planner-flutter-app-733697808355`
+  - `http://localhost:*` (development only)
+- [ ] Remove wildcard CORS permissions
+- [ ] Add CORS preflight validation
+
+#### 1.5.3 API Authentication System
+- [ ] Implement API key validation for frontend requests
+- [ ] Add API key generation for authenticated frontends
+- [ ] Create middleware to validate API keys on protected endpoints
+- [ ] Add API key to Flutter app configuration
+- [ ] Ensure session + API key dual authentication
+- [ ] Add API key rotation mechanism
+
+#### 1.5.4 Rate Limiting & Abuse Prevention
+- [ ] Add rate limiting middleware (per IP, per user)
+- [ ] Implement rate limits on:
+  - `/users/register` (prevent spam registration)
+  - `/auth/login` (prevent brute force)
+  - All API endpoints (prevent DoS)
+- [ ] Add configurable rate limit thresholds
+- [ ] Add rate limit headers in responses
+- [ ] Add rate limit exceeded error handling
+
+#### 1.5.5 Security Headers & Best Practices
+- [ ] Add security headers middleware:
+  - `X-Content-Type-Options: nosniff`
+  - `X-Frame-Options: DENY`
+  - `X-XSS-Protection: 1; mode=block`
+  - `Strict-Transport-Security` (HTTPS only)
+- [ ] Add request size limits
+- [ ] Add timeout configurations
+- [ ] Add input sanitization validation
+
+#### 1.5.6 Frontend Authorization Validation
+- [ ] Add backend validation for all frontend requests
+- [ ] Implement session token validation for API calls
+- [ ] Add frontend origin validation
+- [ ] Ensure Flutter app includes proper authentication headers
+- [ ] Add authentication state validation in Flutter app
+- [ ] Add automatic logout on auth failure
+
+#### 1.5.7 Security Documentation & Monitoring
+- [ ] Document all authentication requirements
+- [ ] Create security checklist for new endpoints
+- [ ] Add authentication flow documentation
+- [ ] Set up security monitoring alerts
+- [ ] Add authentication failure logging
+- [ ] Create security incident response plan
+
+**🚨 CRITICAL VULNERABILITIES TO FIX:**
+1. **`GET /users/` endpoint exposes all user data without authentication**
+2. **CORS allows any origin to call the API (`allow_origins=["*"]`)**
+3. **No API key validation for frontend requests**
+4. **No rate limiting on any endpoints**
+5. **No origin validation for requests**
+
+**🎯 SECURITY GOALS:**
+- Ensure all sensitive endpoints require authentication
+- Restrict API access to known frontend origins only
+- Add comprehensive rate limiting
+- Implement proper API authentication
+- Add security monitoring and logging
+
+---
+
 ### Phase 2: Public User Registration
 
 **⚠️ TDD REQUIREMENT: Complete all test tasks (2.0) before implementing endpoints (2.1-2.2)**

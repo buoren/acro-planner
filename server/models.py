@@ -86,7 +86,7 @@ class Attendees(Base):
 
     id = Column(String(36), primary_key=True)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
-    event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
+    event_id = Column(String(36), ForeignKey("events.id"), nullable=True)  # Nullable for general attendee role
     is_registered = Column(Boolean, default=False)
 
 
@@ -99,6 +99,17 @@ class Hosts(Base):
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
     photos = Column(JSON)
     links = Column(JSON)
+
+
+class Admins(Base):
+    """Admins model for administrative users."""
+    __tablename__ = "admins"
+
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, unique=True, index=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
 
 class Selections(Base):
     """Selections model for user's choices of events."""
