@@ -18,22 +18,22 @@ fi
 
 echo -e "${GREEN}🚀 Starting backend deployment...${NC}"
 
-# Load OAuth environment variables from admin/.env file
-if [ -f "admin/.env" ]; then
-    echo -e "${YELLOW}Loading OAuth environment variables from admin/.env...${NC}"
+# Load OAuth environment variables from .env.oauth file
+if [ -f ".env.oauth" ]; then
+    echo -e "${YELLOW}Loading OAuth environment variables from .env.oauth...${NC}"
     
-    # Export OAuth variables from .env file
-    GOOGLE_CLIENT_ID=$(grep -E "^AUTH_GOOGLE_ID=" admin/.env | cut -d'=' -f2)
-    GOOGLE_CLIENT_SECRET=$(grep -E "^AUTH_GOOGLE_SECRET=" admin/.env | cut -d'=' -f2)
-    SECRET_KEY=$(grep -E "^AUTH_SECRET=" admin/.env | cut -d'=' -f2)
+    # Export OAuth variables from .env.oauth file
+    GOOGLE_CLIENT_ID=$(grep -E "^AUTH_GOOGLE_ID=" .env.oauth | cut -d'=' -f2)
+    GOOGLE_CLIENT_SECRET=$(grep -E "^AUTH_GOOGLE_SECRET=" .env.oauth | cut -d'=' -f2)
+    SECRET_KEY=$(grep -E "^AUTH_SECRET=" .env.oauth | cut -d'=' -f2)
     
     export GOOGLE_CLIENT_ID
     export GOOGLE_CLIENT_SECRET
     export SECRET_KEY
     
-    echo -e "${GREEN}✅ OAuth environment variables loaded from .env file${NC}"
+    echo -e "${GREEN}✅ OAuth environment variables loaded from .env.oauth file${NC}"
 else
-    echo -e "${YELLOW}⚠️  admin/.env file not found - OAuth will not be configured${NC}"
+    echo -e "${YELLOW}⚠️  .env.oauth file not found - OAuth will not be configured${NC}"
 fi
 
 # Get Terraform outputs
@@ -152,6 +152,6 @@ if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$SECRET
 else
     echo -e "${YELLOW}⚠️  OAuth authentication is NOT configured. The admin interface is unprotected.${NC}"
     echo -e "${YELLOW}To enable OAuth protection:${NC}"
-    echo "1. Create admin/.env with GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, and SECRET_KEY"
+    echo "1. Create .env.oauth with AUTH_GOOGLE_ID, AUTH_GOOGLE_SECRET, and AUTH_SECRET"
     echo "2. Re-run the deployment script"
 fi

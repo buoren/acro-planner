@@ -75,17 +75,7 @@ acro-planner/
 │       │       └── api_service.dart  # Production API client
 │       ├── .env             # Production API configuration
 │       └── pubspec.yaml     # Flutter dependencies
-├── admin/                    # SvelteKit admin interface (LOCAL DEV ONLY)
-│   ├── src/
-│   │   ├── routes/
-│   │   │   └── +page.svelte # Admin dashboard
-│   │   ├── lib/
-│   │   │   └── api.ts       # TypeScript API client
-│   │   └── app.html         # App template
-│   ├── package.json         # Node.js dependencies
-│   ├── svelte.config.js     # SvelteKit configuration
-│   ├── tsconfig.json        # TypeScript configuration
-│   └── .env                 # OAuth credentials
+├── .env.oauth                # OAuth credentials for backend authentication
 ├── scripts/                  # Deployment scripts
 │   ├── deploy.sh            # Backend deployment to Cloud Run
 │   ├── deploy-frontend.sh   # Flutter web deployment to GCS
@@ -188,17 +178,7 @@ ENVIRONMENT=production
 - **Type**: Static HTML served directly from backend (`server/static/admin.html`)
 - **Authentication**: OAuth 2.0 with Google provider
 - **Deployment**: Automatically deployed with backend using `./scripts/deploy.sh`
-
-### Local Development (Optional)
-The `admin/` directory contains a SvelteKit version for local development and testing:
-
-```bash
-cd admin
-npm install
-npm run dev  # Starts on http://localhost:5173
-```
-
-**Note**: This SvelteKit version is for development only and is NOT deployed to production. The production admin uses the static HTML file in `server/static/`.
+- **OAuth Credentials**: Stored in `.env.oauth` (not committed to git) The production admin uses the static HTML file in `server/static/`.
 
 ## 🔐 Security & Configuration
 
