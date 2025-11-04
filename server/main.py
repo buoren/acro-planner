@@ -1,7 +1,9 @@
 import os
+import time
+from collections import defaultdict, deque
 from contextlib import asynccontextmanager
 
-from fastapi import Depends, FastAPI, Request
+from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
@@ -100,14 +102,134 @@ app = FastAPI(
 # Initialize OAuth middleware (must be before CORS)
 init_oauth_middleware(app)
 
-# Add CORS middleware
+# Add CORS middleware with specific allowed origins
+# Environment-based CORS configuration for security
+def get_allowed_origins():
+    """Get allowed CORS origins based on environment"""
+    environment = os.getenv("ENVIRONMENT", "development")
+    
+    # Production origins
+    production_origins = [
+        "https://acro-planner-backend-733697808355.us-central1.run.app",  # Backend itself
+        "https://storage.googleapis.com",  # Flutter app on GCS
+    ]
+    
+    # Development origins
+    development_origins = [
+        "http://localhost:3000",   # React dev
+        "http://localhost:5173",   # SvelteKit dev  
+        "http://localhost:8080",   # Flutter dev
+        "http://localhost:8081",   # Flutter dev alt port
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:8080",
+        "http://127.0.0.1:8081",
+    ]
+    
+    if environment == "production":
+        return production_origins
+    else:
+        # In development, allow both production and development origins
+        return production_origins + development_origins
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # In production, replace with specific origins
+    allow_origins=get_allowed_origins(),  # Specific origins only - NO wildcards
     allow_credentials=True,
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],  # Specific methods
+    allow_headers=["*"],  # Keep headers flexible for now
 )
+
+# Security Headers Middleware
+@app.middleware("http")
+async def add_security_headers(request: Request, call_next):
+    """Add security headers to all responses"""
+    response = await call_next(request)
+    
+    # Basic security headers
+    response.headers["X-Content-Type-Options"] = "nosniff"
+    response.headers["X-Frame-Options"] = "DENY"
+    response.headers["X-XSS-Protection"] = "1; mode=block"
+    response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
+    
+    # Content Security Policy (restrictive for API)
+    response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none';"
+    
+    # HTTPS-only headers for production
+    environment = os.getenv("ENVIRONMENT", "development")
+    if environment == "production":
+        # Strict Transport Security (HSTS) - 1 year
+        response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    
+    return response
+
+# Rate Limiting Middleware
+# Simple in-memory rate limiter - in production, use Redis for distributed rate limiting
+rate_limit_storage = defaultdict(lambda: deque())
+
+@app.middleware("http")
+async def rate_limit_middleware(request: Request, call_next):
+    """Rate limiting middleware to prevent abuse"""
+    
+    # Get client IP (considering proxy headers for Cloud Run)
+    client_ip = request.headers.get("X-Forwarded-For", "").split(",")[0].strip()
+    if not client_ip:
+        client_ip = request.headers.get("X-Real-IP", "")
+    if not client_ip:
+        client_ip = getattr(request.client, "host", "unknown")
+    
+    # Rate limiting configuration
+    current_time = time.time()
+    rate_limits = {
+        # Endpoint-specific rate limits (requests per minute)
+        "/users/register": 5,      # 5 registrations per minute per IP
+        "/auth/login": 10,         # 10 login attempts per minute per IP
+        "/auth/callback": 20,      # OAuth callbacks
+        "default": 100,            # 100 requests per minute per IP for other endpoints
+    }
+    
+    # Get rate limit for this endpoint
+    path = request.url.path
+    limit = rate_limits.get(path, rate_limits["default"])
+    
+    # Create key for this IP + endpoint combination
+    key = f"{client_ip}:{path}"
+    
+    # Clean old entries (older than 1 minute)
+    requests = rate_limit_storage[key]
+    while requests and requests[0] < current_time - 60:
+        requests.popleft()
+    
+    # Check if rate limit exceeded
+    if len(requests) >= limit:
+        # Create rate limit exceeded exception with headers
+        raise HTTPException(
+            status_code=429,
+            detail={
+                "error": "Rate limit exceeded",
+                "message": f"Too many requests. Limit: {limit} requests per minute.",
+                "retry_after": 60
+            },
+            headers={
+                "X-RateLimit-Limit": str(limit),
+                "X-RateLimit-Remaining": "0",
+                "X-RateLimit-Reset": str(int(current_time + 60)),
+                "Retry-After": "60"
+            }
+        )
+    
+    # Add current request to tracking
+    requests.append(current_time)
+    
+    # Process the request
+    response = await call_next(request)
+    
+    # Add rate limit headers to successful responses
+    response.headers["X-RateLimit-Limit"] = str(limit)
+    response.headers["X-RateLimit-Remaining"] = str(limit - len(requests))
+    response.headers["X-RateLimit-Reset"] = str(int(current_time + 60))
+    
+    return response
 
 # SSL/HTTPS enforcement middleware
 # Note: In production, SSL should be enforced at the load balancer/reverse proxy level
