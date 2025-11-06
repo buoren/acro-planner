@@ -7,10 +7,14 @@ import os
 import secrets
 
 from authlib.integrations.starlette_client import OAuth
-from fastapi import HTTPException, Request
+from fastapi import HTTPException, Request, Response
 from fastapi.responses import RedirectResponse
 from itsdangerous import URLSafeTimedSerializer
 from starlette.middleware.sessions import SessionMiddleware
+from auth_manager import create_access_token, manager
+from utils.roles import get_user_with_roles
+from database import get_db
+from sqlalchemy.orm import Session
 
 logger = logging.getLogger(__name__)
 
@@ -53,31 +57,19 @@ def init_oauth_middleware(app):
     )
     logger.info("OAuth middleware initialized with cross-site cookie support")
 
-def get_current_user(request: Request) -> dict | None:
-    """Get current authenticated user from session"""
+async def get_current_user(request: Request) -> dict | None:
+    """Get current authenticated user from JWT token"""
     try:
-        # Debug logging
-        logger.info(f"GET_CURRENT_USER: Request headers: {dict(request.headers)}")
-        logger.info(f"GET_CURRENT_USER: Cookies: {request.cookies}")
-        
-        session = request.session
-        logger.info(f"GET_CURRENT_USER: Session data: {dict(session)}")
-        
-        if 'user' in session:
-            # Verify session integrity
-            user_data = session['user']
-            logger.info(f"GET_CURRENT_USER: Found user in session: {user_data}")
-            if isinstance(user_data, dict) and 'email' in user_data:
-                return user_data
-        else:
-            logger.info("GET_CURRENT_USER: No user found in session")
+        # Use the JWT-based authentication manager
+        from auth_manager import get_current_user as jwt_get_current_user
+        return await jwt_get_current_user(request)
     except Exception as e:
-        logger.error(f"Error retrieving user from session: {e}")
-    return None
+        logger.error(f"Error retrieving user from JWT: {e}")
+        return None
 
-def require_auth(request: Request) -> dict:
+async def require_auth(request: Request) -> dict:
     """Dependency to require authentication"""
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if not user:
         # Check if this is coming from the admin interface
         is_admin_request = request.url.path.startswith('/admin')
@@ -145,11 +137,6 @@ async def oauth_callback(request: Request):
         logger.info(f"Session available: {hasattr(request, 'session')}")
         logger.info(f"Query params: {dict(request.query_params)}")
 
-        # Ensure session exists
-        if not hasattr(request, 'session'):
-            logger.error("No session available in callback")
-            raise HTTPException(status_code=400, detail="Session not available")
-
         # Get the authorization code and exchange for token
         token = await oauth.google.authorize_access_token(request)
 
@@ -163,30 +150,70 @@ async def oauth_callback(request: Request):
         if not user_info or 'email' not in user_info:
             raise HTTPException(status_code=400, detail="Failed to get user information")
 
-        # Store user in session
-        request.session['user'] = {
-            'email': user_info['email'],
-            'name': user_info.get('name', ''),
-            'picture': user_info.get('picture', ''),
-            'sub': user_info.get('sub', '')
-        }
-
         logger.info(f"User authenticated: {user_info['email']}")
 
+        # Get database session to look up user with roles
+        db_gen = get_db()
+        db: Session = next(db_gen)
+        
+        try:
+            # Find user by email
+            from models import Users
+            existing_user = db.query(Users).filter(Users.email == user_info['email']).first()
+            
+            if not existing_user:
+                # Create new user automatically
+                from ulid import ULID
+                new_user_id = str(ULID())
+                new_user = Users(
+                    id=new_user_id,
+                    email=user_info['email'],
+                    name=user_info.get('name', user_info['email'].split('@')[0])
+                )
+                db.add(new_user)
+                db.commit()
+                logger.info(f"Created new user in database: {user_info['email']} with ID: {new_user_id}")
+                user_id = new_user_id
+            else:
+                user_id = existing_user.id
+                logger.info(f"Found existing user: {user_info['email']} with ID: {user_id}")
+            
+            # Create JWT token with user ID
+            access_token = create_access_token(user_id)
+            
+            logger.info(f"JWT token created for user: {user_id}")
+
+        finally:
+            db.close()
+
         # Get the stored return URL or default to admin
-        return_url = request.session.get('oauth_return_url', f"{BASE_URL}/admin")
+        return_url = request.session.get('oauth_return_url', f"{BASE_URL}/admin") if hasattr(request, 'session') else f"{BASE_URL}/admin"
         logger.info(f"Redirecting user to: {return_url}")
         
-        # Clear the return URL from session
-        request.session.pop('oauth_return_url', None)
+        # Clear the return URL from session if it exists
+        if hasattr(request, 'session'):
+            request.session.pop('oauth_return_url', None)
 
         # If returning to Flutter app, include auth success indicator
         if 'storage.googleapis.com' in return_url and 'acro-planner-flutter-app-733697808355' in return_url:
             # Add auth success parameter to URL
             separator = '&' if '?' in return_url else '?'
             return_url = f"{return_url}{separator}auth_success=true&email={user_info['email']}"
+
+        # Create response with JWT cookie
+        response = RedirectResponse(url=return_url)
         
-        return RedirectResponse(url=return_url)
+        # Set JWT token as HTTP-only cookie
+        response.set_cookie(
+            key=manager.cookie_name,
+            value=access_token,
+            httponly=True,
+            secure=True,  # HTTPS only
+            samesite="none",  # Allow cross-site cookies
+            max_age=24 * 60 * 60  # 24 hours
+        )
+        
+        return response
 
     except Exception as e:
         logger.error(f"OAuth callback error: {e}")
@@ -197,9 +224,17 @@ async def oauth_callback(request: Request):
         raise HTTPException(status_code=400, detail=f"Authentication failed: {str(e)}")
 
 def logout_user(request: Request):
-    """Logout user by clearing session"""
-    request.session.clear()
-    return RedirectResponse(url=f"{BASE_URL}/")
+    """Logout user by clearing JWT cookie"""
+    response = RedirectResponse(url=f"{BASE_URL}/")
+    
+    # Clear the JWT cookie
+    response.delete_cookie(
+        key=manager.cookie_name,
+        secure=True,
+        samesite="none"
+    )
+    
+    return response
 
 def is_oauth_configured() -> bool:
     """Check if OAuth is properly configured"""

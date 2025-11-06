@@ -13,14 +13,13 @@ from api.users import router as users_router
 from api.auth import require_admin
 from database import get_db
 from oauth import (
-    get_current_user,
     init_oauth_middleware,
     is_oauth_configured,
     logout_user,
     oauth_callback,
     oauth_login,
-    require_auth,
 )
+from auth_manager import get_current_user
 
 
 # Create all database tables on startup (when database is available)
@@ -123,17 +122,17 @@ def get_allowed_origins():
         "http://localhost:5173",   # SvelteKit dev  
         "http://localhost:8080",   # Flutter dev
         "http://localhost:8081",   # Flutter dev alt port
+        "http://localhost:8095",   # Flutter dev alt port 2
         "http://127.0.0.1:3000",
         "http://127.0.0.1:5173",
         "http://127.0.0.1:8080",
         "http://127.0.0.1:8081",
+        "http://127.0.0.1:8095",
     ]
     
-    if environment == "production":
-        return production_origins
-    else:
-        # In development, allow both production and development origins
-        return production_origins + development_origins
+    # Always allow development origins for testing
+    # In production, we still need to test locally so include development origins
+    return production_origins + development_origins
 
 app.add_middleware(
     CORSMiddleware,
@@ -272,11 +271,6 @@ app.include_router(users_router)
 @app.get("/")
 async def root(request: Request):
     """Root endpoint - serve login page for unauthenticated users, redirect authenticated users to admin"""
-    # Ensure session is initialized
-    if not hasattr(request, 'session'):
-        # This shouldn't happen with SessionMiddleware, but let's be safe
-        request.session = {}
-
     user = get_current_user(request)
     if user:
         # User is already authenticated, redirect to admin
@@ -333,11 +327,15 @@ async def debug_users_test():
 async def admin_interface(request: Request, db: Session = Depends(get_db)):
     """Serve the protected admin interface"""
     from fastapi.responses import HTMLResponse, RedirectResponse
-    from api.auth import get_current_user_with_roles
+    from auth_manager import get_current_user
     
     try:
         # Get current user with roles
-        user = get_current_user_with_roles(request, db)
+        user = await get_current_user(request)
+        
+        if not user:
+            # User not authenticated, redirect to login
+            return RedirectResponse(url="/auth/login?admin=true", status_code=302)
         
         # Check if user is admin
         if not user.get('is_admin', False):
@@ -528,23 +526,33 @@ async def password_login(request: Request):
             if not verify_password(login_data.password, user.password_hash, user.salt):
                 raise HTTPException(status_code=401, detail="Invalid email or password")
 
-            # Create session (same format as OAuth)
-            session_data = {
-                'email': user.email,
-                'name': user.name,
-                'picture': '',  # No picture for password login
-                'sub': user.id,  # Use user ID as sub
-                'auth_method': 'password'
-            }
-            request.session['user'] = session_data
+            # Create JWT token
+            from auth_manager import create_access_token, manager
+            access_token = create_access_token(user.id)
             
             # Debug logging
-            print(f"PASSWORD_LOGIN: Created session for user {user.email}")
-            print(f"PASSWORD_LOGIN: Session data: {session_data}")
-            print(f"PASSWORD_LOGIN: Request headers: {dict(request.headers)}")
-            print(f"PASSWORD_LOGIN: Response cookies will be set for domain: {request.url.hostname}")
+            print(f"PASSWORD_LOGIN: Created JWT token for user {user.email}")
+            print(f"PASSWORD_LOGIN: User ID: {user.id}")
 
-            return {"success": True, "message": "Login successful", "redirect": "/admin"}
+            # Create JSON response with JWT cookie
+            from fastapi.responses import JSONResponse
+            response = JSONResponse({
+                "success": True, 
+                "message": "Login successful", 
+                "redirect": "/admin"
+            })
+            
+            # Set JWT token as HTTP-only cookie
+            response.set_cookie(
+                key=manager.cookie_name,
+                value=access_token,
+                httponly=True,
+                secure=True,  # HTTPS only
+                samesite="none",  # Allow cross-site cookies
+                max_age=24 * 60 * 60  # 24 hours
+            )
+            
+            return response
 
         finally:
             db.close()
@@ -567,7 +575,7 @@ async def logout(request: Request):
 @app.get("/auth/me")
 async def get_me(request: Request):
     """Get current user info"""
-    user = get_current_user(request)
+    user = await get_current_user(request)
     if user:
         return {"user": user, "authenticated": True}
     return {"user": None, "authenticated": False}

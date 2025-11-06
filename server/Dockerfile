@@ -29,7 +29,8 @@ RUN pip install --no-cache-dir \
     authlib==1.3.2 \
     requests==2.32.3 \
     itsdangerous==2.2.0 \
-    httpx==0.27.2
+    httpx==0.27.2 \
+    fastapi-login==1.10.3
 
 # Copy application code
 COPY . .
