@@ -8,7 +8,6 @@ Replace with your actual models as needed.
 
 from sqlalchemy import JSON, Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.sql import func
-
 # Import Base from database.py to share the same metadata
 from database import Base
 
@@ -20,8 +19,9 @@ class Users(Base):
     id = Column(String(36), primary_key=True)
     email = Column(String(255), unique=True, index=True, nullable=False)
     name = Column(String(100), nullable=False)
-    password_hash = Column(String(255), nullable=False)
-    salt = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # Nullable for OAuth-only users
+    salt = Column(String(255), nullable=True)  # Nullable for OAuth-only users
+    oauth_only = Column(Boolean, default=False, nullable=False)  # Flag for OAuth-only users
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

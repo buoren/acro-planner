@@ -45,18 +45,32 @@ serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 def init_oauth_middleware(app):
     """Initialize OAuth middleware"""
-    app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY)
-    logger.info("OAuth middleware initialized")
+    app.add_middleware(
+        SessionMiddleware, 
+        secret_key=SECRET_KEY,
+        same_site="none",  # Allow cross-site cookies
+        https_only=True    # Require HTTPS for security
+    )
+    logger.info("OAuth middleware initialized with cross-site cookie support")
 
 def get_current_user(request: Request) -> dict | None:
     """Get current authenticated user from session"""
     try:
+        # Debug logging
+        logger.info(f"GET_CURRENT_USER: Request headers: {dict(request.headers)}")
+        logger.info(f"GET_CURRENT_USER: Cookies: {request.cookies}")
+        
         session = request.session
+        logger.info(f"GET_CURRENT_USER: Session data: {dict(session)}")
+        
         if 'user' in session:
             # Verify session integrity
             user_data = session['user']
+            logger.info(f"GET_CURRENT_USER: Found user in session: {user_data}")
             if isinstance(user_data, dict) and 'email' in user_data:
                 return user_data
+        else:
+            logger.info("GET_CURRENT_USER: No user found in session")
     except Exception as e:
         logger.error(f"Error retrieving user from session: {e}")
     return None
@@ -65,8 +79,15 @@ def require_auth(request: Request) -> dict:
     """Dependency to require authentication"""
     user = get_current_user(request)
     if not user:
-        # Redirect to OAuth login
-        auth_url = f"{BASE_URL}/auth/login"
+        # Check if this is coming from the admin interface
+        is_admin_request = request.url.path.startswith('/admin')
+        
+        # Redirect to OAuth login with admin flag if needed
+        if is_admin_request:
+            auth_url = f"{BASE_URL}/auth/login?admin=true"
+        else:
+            auth_url = f"{BASE_URL}/auth/login"
+            
         raise HTTPException(
             status_code=302,
             headers={"Location": auth_url}

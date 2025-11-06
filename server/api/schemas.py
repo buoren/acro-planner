@@ -20,6 +20,7 @@ class UserRegistration(BaseModel):
     name: str
     password: str
     password_confirm: str
+    role: Optional[UserRole] = UserRole.ATTENDEE  # Default role is attendee
 
     @field_validator('name')
     @classmethod

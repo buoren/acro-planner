@@ -9,7 +9,39 @@ Complete Acro Planner application with FastAPI backend deployed to Google Cloud,
 - **Production API**: https://acro-planner-backend-733697808355.us-central1.run.app
 - **Health Check**: https://acro-planner-backend-733697808355.us-central1.run.app/health
 - **Admin Interface**: https://acro-planner-backend-733697808355.us-central1.run.app/admin (OAuth-protected)
-- **Flutter Web App**: https://storage.googleapis.com/acro-planner-flutter-app-733697808355/index.html
+- **Flutter Web App**: https://storage.googleapis.com/acro-planner-flutter-app-733697808355/release_20251105_210028/index.html
+
+## 🌐 USER ACCESS GUIDE
+
+### For Regular Users (Flutter App Access)
+**Primary URL**: https://storage.googleapis.com/acro-planner-flutter-app-733697808355/release_20251105_210028/index.html
+- Main user interface for acrobatics session planning
+- Material Design 3 responsive interface
+- Works on mobile, tablet, and desktop browsers
+- Supports both light and dark themes
+- Real-time API connectivity status
+
+### For Admin Users (Administrative Access)
+**Admin URL**: https://acro-planner-backend-733697808355.us-central1.run.app/admin
+- OAuth 2.0 authentication required (Google account)
+- Administrative dashboard for user management
+- Content Security Policy configured for admin functionality
+- Automatically redirects to Google OAuth if not authenticated
+- Returns to admin interface after successful authentication
+
+### For Developers (Testing & Development)
+**API Base URL**: https://acro-planner-backend-733697808355.us-central1.run.app
+- Direct API access for testing endpoints
+- Health check: `/health`
+- Authentication endpoints: `/auth/login`, `/auth/callback`, `/auth/logout`
+- User management: `/users/register`, `/users/login`
+- All endpoints support CORS for web client development
+
+### Authentication Flow URLs
+1. **Login Initiation**: `/auth/login` (supports `?admin=true` for admin flows)
+2. **OAuth Callback**: `/auth/callback` (handles Google OAuth responses)
+3. **User Status Check**: `/auth/me` (returns current authentication state)
+4. **Logout**: `/auth/logout` (clears session and redirects)
 
 ## 🔥 CRITICAL DEPLOYMENT WORKFLOW
 **ALWAYS DEPLOY TO PRODUCTION AFTER EVERY FIX UNLESS TOLD OTHERWISE**

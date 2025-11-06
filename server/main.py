@@ -7,8 +7,11 @@ from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from sqlalchemy.orm import Session
 
 from api.users import router as users_router
+from api.auth import require_admin
+from database import get_db
 from oauth import (
     get_current_user,
     init_oauth_middleware,
@@ -152,14 +155,37 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     
-    # Content Security Policy (restrictive for API)
-    response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none';"
+    # Content Security Policy (restrictive for API, but skip for admin/auth routes that set their own CSP)
+    if not any(request.url.path.startswith(path) for path in ['/admin', '/auth', '/', '/access-denied']):
+        response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none';"
     
     # HTTPS-only headers for production
     environment = os.getenv("ENVIRONMENT", "development")
     if environment == "production":
         # Strict Transport Security (HSTS) - 1 year
         response.headers["Strict-Transport-Security"] = "max-age=31536000; includeSubDomains; preload"
+    
+    return response
+
+# Request Logging Middleware (for debugging)
+@app.middleware("http")
+async def request_logging_middleware(request: Request, call_next):
+    """Log requests for debugging purposes"""
+    import datetime
+    
+    timestamp = datetime.datetime.now().isoformat()
+    method = request.method
+    path = request.url.path
+    headers = dict(request.headers)
+    
+    print(f"[{timestamp}] {method} {path}")
+    print(f"  User-Agent: {headers.get('user-agent', 'N/A')}")
+    print(f"  Referer: {headers.get('referer', 'N/A')}")
+    print(f"  Cookie: {'Present' if headers.get('cookie') else 'None'}")
+    
+    response = await call_next(request)
+    
+    print(f"  Response: {response.status_code}")
     
     return response
 
@@ -261,16 +287,192 @@ async def root(request: Request):
         # Initialize session to ensure OAuth state can be stored
         if 'session_init' not in request.session:
             request.session['session_init'] = True
-        return FileResponse('static/login.html')
+        
+        from fastapi.responses import HTMLResponse
+        with open('static/login.html', 'r') as f:
+            content = f.read()
+        
+        return HTMLResponse(
+            content=content,
+            headers={
+                "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://lh3.googleusercontent.com; font-src 'self'; connect-src 'self';"
+            }
+        )
 
 @app.get("/health")
 async def health_check():
     return {"status": "healthy"}
 
+@app.get("/favicon.ico")
+async def favicon():
+    """Return a simple favicon to prevent 404 errors"""
+    from fastapi.responses import Response
+    # Simple 1x1 transparent PNG as favicon
+    favicon_bytes = b'\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89\x00\x00\x00\rIDATx\x9cc\xf8\x0f\x00\x00\x01\x00\x01\x00\x18\xdd\x8d\xb4\x1c\x00\x00\x00\x00IEND\xaeB`\x82'
+    return Response(content=favicon_bytes, media_type="image/png")
+
+@app.get("/debug/routes")
+async def debug_routes():
+    """Debug endpoint to list all registered routes"""
+    routes = []
+    for route in app.routes:
+        if hasattr(route, 'path') and hasattr(route, 'methods'):
+            routes.append({
+                "path": route.path,
+                "methods": list(route.methods) if route.methods else [],
+                "name": getattr(route, 'name', None)
+            })
+    return {"routes": routes}
+
+@app.get("/debug/users-test")
+async def debug_users_test():
+    """Debug endpoint to test basic users routing without auth"""
+    return {"message": "Users routing works", "status": "ok"}
+
 @app.get("/admin")
-async def admin_interface(request: Request, user: dict = Depends(require_auth)):
+async def admin_interface(request: Request, db: Session = Depends(get_db)):
     """Serve the protected admin interface"""
-    return FileResponse('static/admin.html')
+    from fastapi.responses import HTMLResponse, RedirectResponse
+    from api.auth import get_current_user_with_roles
+    
+    try:
+        # Get current user with roles
+        user = get_current_user_with_roles(request, db)
+        
+        # Check if user is admin
+        if not user.get('is_admin', False):
+            print(f"[ADMIN_DEBUG] Non-admin user {user.get('email')} attempting to access admin interface")
+            return RedirectResponse(url="/access-denied", status_code=302)
+        
+        print(f"[ADMIN_DEBUG] Admin user authenticated: {user.get('email')}")
+        
+        # Read the admin HTML file
+        with open('static/admin.html', 'r') as f:
+            content = f.read()
+        
+        # Return with relaxed CSP for admin interface
+        return HTMLResponse(
+            content=content,
+            headers={
+                "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data: https://lh3.googleusercontent.com; font-src 'self';"
+            }
+        )
+    except HTTPException as e:
+        # If not authenticated, redirect to login
+        if e.status_code == 401:
+            return RedirectResponse(url="/login", status_code=302)
+        # For any other error, redirect to access-denied
+        return RedirectResponse(url="/access-denied", status_code=302)
+
+@app.get("/access-denied")
+async def access_denied(request: Request):
+    """Serve access denied page for non-admin users"""
+    from fastapi.responses import HTMLResponse
+    from api.auth import optional_auth
+    from database import get_db
+    
+    # Get database session
+    db_gen = get_db()
+    db = next(db_gen)
+    
+    try:
+        # Try to get current user (optional - won't fail if not authenticated)
+        user = optional_auth(request, db)
+    finally:
+        db.close()
+    
+    # If no user, show generic message
+    if not user:
+        user = {'name': 'Guest', 'email': 'Not logged in', 'is_admin': False}
+    
+    access_denied_html = f"""
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Access Denied - Acro Planner</title>
+        <style>
+            body {{
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+                background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                min-height: 100vh;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                margin: 0;
+                color: white;
+            }}
+            .container {{
+                background: rgba(255, 255, 255, 0.1);
+                backdrop-filter: blur(10px);
+                border-radius: 15px;
+                padding: 3rem;
+                text-align: center;
+                max-width: 500px;
+                box-shadow: 0 8px 32px rgba(31, 38, 135, 0.37);
+                border: 1px solid rgba(255, 255, 255, 0.18);
+            }}
+            h1 {{
+                font-size: 2.5rem;
+                margin-bottom: 1rem;
+                color: #ff6b6b;
+            }}
+            .emoji {{
+                font-size: 4rem;
+                margin-bottom: 1rem;
+            }}
+            .user-info {{
+                background: rgba(255, 255, 255, 0.1);
+                padding: 1rem;
+                border-radius: 10px;
+                margin: 1.5rem 0;
+            }}
+            .btn {{
+                background: linear-gradient(45deg, #74b9ff, #0984e3);
+                color: white;
+                border: none;
+                padding: 0.75rem 1.5rem;
+                border-radius: 8px;
+                text-decoration: none;
+                display: inline-block;
+                margin: 0.5rem;
+                transition: transform 0.3s ease;
+            }}
+            .btn:hover {{
+                transform: translateY(-2px);
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="emoji">🚫</div>
+            <h1>Access Denied</h1>
+            <p>Sorry, you don't have permission to access the admin interface.</p>
+            
+            <div class="user-info">
+                <p><strong>Logged in as:</strong> {user.get('name', 'Unknown')}</p>
+                <p><strong>Email:</strong> {user.get('email', 'Unknown')}</p>
+                <p><strong>Role:</strong> {'Admin' if user.get('is_admin') else 'User'}</p>
+            </div>
+            
+            <p>If you believe this is an error, please contact your administrator.</p>
+            
+            <div>
+                <a href="/" class="btn">Go to Home</a>
+                <a href="/auth/logout" class="btn">Logout</a>
+            </div>
+        </div>
+    </body>
+    </html>
+    """
+    
+    return HTMLResponse(
+        content=access_denied_html,
+        headers={
+            "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';"
+        }
+    )
 
 # OAuth Authentication Routes
 @app.get("/auth/login")
@@ -314,19 +516,33 @@ async def password_login(request: Request):
 
             if not user:
                 raise HTTPException(status_code=401, detail="Invalid email or password")
+            
+            # Check if user is OAuth-only
+            if user.oauth_only:
+                raise HTTPException(
+                    status_code=401, 
+                    detail="This account uses OAuth login only. Please use the 'Login with Google' button."
+                )
 
             # Verify password
             if not verify_password(login_data.password, user.password_hash, user.salt):
                 raise HTTPException(status_code=401, detail="Invalid email or password")
 
             # Create session (same format as OAuth)
-            request.session['user'] = {
+            session_data = {
                 'email': user.email,
                 'name': user.name,
                 'picture': '',  # No picture for password login
                 'sub': user.id,  # Use user ID as sub
                 'auth_method': 'password'
             }
+            request.session['user'] = session_data
+            
+            # Debug logging
+            print(f"PASSWORD_LOGIN: Created session for user {user.email}")
+            print(f"PASSWORD_LOGIN: Session data: {session_data}")
+            print(f"PASSWORD_LOGIN: Request headers: {dict(request.headers)}")
+            print(f"PASSWORD_LOGIN: Response cookies will be set for domain: {request.url.hostname}")
 
             return {"success": True, "message": "Login successful", "redirect": "/admin"}
 
@@ -363,6 +579,36 @@ async def auth_status():
         "oauth_configured": is_oauth_configured(),
         "message": "OAuth is configured" if is_oauth_configured() else "OAuth not configured - set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET"
     }
+
+@app.post("/auth/promote-to-admin")
+async def promote_current_user_to_admin(request: Request):
+    """Promote current user to admin (temporary endpoint for initial setup)"""
+    from oauth import get_current_user
+    from sqlalchemy.orm import Session
+    from database import get_db
+    from utils.roles import add_admin_role
+    
+    user = get_current_user(request)
+    if not user:
+        raise HTTPException(status_code=401, detail="Authentication required")
+    
+    user_id = user.get('sub')
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Invalid user session")
+    
+    # Get database session
+    db_gen = get_db()
+    db: Session = next(db_gen)
+    
+    try:
+        # Add admin role
+        add_admin_role(db, user_id)
+        return {"success": True, "message": "User promoted to admin successfully"}
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Failed to promote user: {str(e)}")
+    finally:
+        db.close()
 
 # Legacy endpoint for backward compatibility
 # The new endpoint is at /users/register

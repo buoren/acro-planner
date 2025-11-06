@@ -2,7 +2,6 @@
 User-related API endpoints.
 """
 
-import uuid
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -20,6 +19,11 @@ from utils.roles import get_user_with_roles, add_admin_role, get_users_by_role, 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
+@router.get("/debug-no-auth", response_model=dict)
+def get_all_users_debug_no_auth(db: Session = Depends(get_db)):
+    """Debug endpoint to test users without auth"""
+    return {"message": "Users endpoint works without auth", "status": "ok"}
+
 @router.get("/", response_model=list[UserResponse])
 def get_all_users(user: dict = Depends(require_admin), db: Session = Depends(get_db)):
     """
@@ -27,11 +31,14 @@ def get_all_users(user: dict = Depends(require_admin), db: Session = Depends(get
     
     Returns a list of all registered users with role information.
     """
+    print(f"[USERS_DEBUG] get_all_users route handler called")
+    print(f"[USERS_DEBUG] User passed to route: {user}")
     try:
         users = db.query(Users).all()
         user_responses = []
         for db_user in users:
             user_info = get_user_with_roles(db, db_user.id)
+            print(f"[USERS_DEBUG] User info: {user_info}")
             if user_info:
                 user_responses.append(UserResponse(
                     id=user_info['id'],
@@ -66,8 +73,9 @@ def add_user(user_data: UserRegistration, db: Session = Depends(get_db)):
                 detail="Email already registered"
             )
 
-        # Generate UUID for new user
-        user_id = str(uuid.uuid4())
+        # Generate ULID for new user
+        import ulid
+        user_id = str(ulid.new())
 
         # Hash password with salt
         password_hash, salt = create_password_hash(user_data.password)
@@ -86,12 +94,39 @@ def add_user(user_data: UserRegistration, db: Session = Depends(get_db)):
         db.commit()
         db.refresh(new_user)
 
-        # Add default attendee role
+        # Import role functions
+        from utils.roles import add_attendee_role, add_host_role, add_admin_role
+        
+        # ALWAYS add attendee role first (every user is at least an attendee)
         try:
-            add_attendee_role(db, new_user.id)
+            attendee = add_attendee_role(db, new_user.id)
+            print(f"Added attendee role to new user {new_user.id}")
         except Exception as e:
-            # If attendee role creation fails, still return the user but log the error
+            # If attendee role creation fails, still continue but log the error
             print(f"Failed to add attendee role to new user {new_user.id}: {e}")
+            attendee = None
+        
+        # Add additional roles based on the specified role
+        if user_data.role == UserRole.HOST or user_data.role == UserRole.ADMIN:
+            # Hosts need both attendee and host entries
+            try:
+                if attendee:
+                    add_host_role(db, new_user.id, attendee.id)
+                    print(f"Added host role to new user {new_user.id}")
+                else:
+                    # Try to add host without attendee reference
+                    add_host_role(db, new_user.id)
+                    print(f"Added host role to new user {new_user.id} (without attendee reference)")
+            except Exception as e:
+                print(f"Failed to add host role to new user {new_user.id}: {e}")
+        
+        if user_data.role == UserRole.ADMIN:
+            # Admins get attendee + host + admin entries
+            try:
+                add_admin_role(db, new_user.id)
+                print(f"Added admin role to new user {new_user.id}")
+            except Exception as e:
+                print(f"Failed to add admin role to new user {new_user.id}: {e}")
 
         # Get user with role information
         user_with_roles = get_user_with_roles(db, new_user.id)
