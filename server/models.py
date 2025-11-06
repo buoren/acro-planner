@@ -139,6 +139,18 @@ class Selections(Base):
     is_selected = Column(Boolean, default=False)
 
 
+class PasswordReset(Base):
+    """Password reset table for temporary password reset tokens."""
+    __tablename__ = "password_reset"
+
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
+    temporary_password_hash = Column(String(255), nullable=False)
+    salt = Column(String(255), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
+    is_consumed = Column(Boolean, default=False, nullable=False)
+
+
 # Example of how to use the models in your FastAPI app:
 """
 from sqlalchemy import create_engine
