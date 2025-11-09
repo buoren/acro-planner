@@ -36,6 +36,27 @@ else
     echo -e "${YELLOW}⚠️  .env.oauth file not found - OAuth will not be configured${NC}"
 fi
 
+# Load Gmail environment variables from .env.gmail file
+if [ -f ".env.gmail" ]; then
+    echo -e "${YELLOW}Loading Gmail environment variables from .env.gmail...${NC}"
+    
+    # Export Gmail variables from .env.gmail file
+    # Note: We need to handle the JSON carefully as it contains special characters
+    GMAIL_SERVICE_ACCOUNT_JSON=$(grep -E "^GMAIL_SERVICE_ACCOUNT_JSON=" .env.gmail | cut -d"'" -f2)
+    GMAIL_SENDER_EMAIL=$(grep -E "^GMAIL_SENDER_EMAIL=" .env.gmail | cut -d'=' -f2)
+    GMAIL_IMPERSONATION_EMAIL=$(grep -E "^GMAIL_IMPERSONATION_EMAIL=" .env.gmail | cut -d'=' -f2)
+    FRONTEND_URL=$(grep -E "^FRONTEND_URL=" .env.gmail | cut -d'=' -f2)
+    
+    export GMAIL_SERVICE_ACCOUNT_JSON
+    export GMAIL_SENDER_EMAIL
+    export GMAIL_IMPERSONATION_EMAIL
+    export FRONTEND_URL
+    
+    echo -e "${GREEN}✅ Gmail environment variables loaded from .env.gmail file${NC}"
+else
+    echo -e "${YELLOW}⚠️  .env.gmail file not found - Gmail API will not be configured${NC}"
+fi
+
 # Get Terraform outputs
 cd terraform
 REGISTRY_URL=$(terraform output -raw artifact_registry_url 2>/dev/null || echo "")
@@ -80,6 +101,32 @@ fi
 
 if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$SECRET_KEY" ]; then
     echo -e "${YELLOW}Deploying with OAuth configuration...${NC}"
+    
+    # Create comprehensive environment variables file
+    TEMP_ENV_FILE="/tmp/all_env_vars_$(date +%s).yaml"
+    cat > "$TEMP_ENV_FILE" <<EOF
+GOOGLE_CLIENT_ID: '${GOOGLE_CLIENT_ID}'
+GOOGLE_CLIENT_SECRET: '${GOOGLE_CLIENT_SECRET}'
+SECRET_KEY: '${SECRET_KEY}'
+BASE_URL: 'https://acro-planner-backend-733697808355.us-central1.run.app'
+EOF
+    
+    # Add database URL if available
+    if [ -n "$DATABASE_URL" ]; then
+        echo "DATABASE_URL: '${DATABASE_URL}'" >> "$TEMP_ENV_FILE"
+    fi
+    
+    # Add Gmail environment variables if available
+    if [ -n "$GMAIL_SERVICE_ACCOUNT_JSON" ] && [ -n "$GMAIL_SENDER_EMAIL" ] && [ -n "$GMAIL_IMPERSONATION_EMAIL" ]; then
+        cat >> "$TEMP_ENV_FILE" <<EOF
+GMAIL_SERVICE_ACCOUNT_JSON: '${GMAIL_SERVICE_ACCOUNT_JSON}'
+GMAIL_SENDER_EMAIL: '${GMAIL_SENDER_EMAIL}'
+GMAIL_IMPERSONATION_EMAIL: '${GMAIL_IMPERSONATION_EMAIL}'
+FRONTEND_URL: '${FRONTEND_URL}'
+EOF
+        echo -e "${GREEN}✅ Including Gmail API configuration${NC}"
+    fi
+    
     if [ -n "$DATABASE_URL" ]; then
         gcloud run deploy acro-planner-backend \
           --image=${REGISTRY_URL}/acro-planner-backend:latest \
@@ -88,11 +135,7 @@ if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$SECRET
           --platform=managed \
           --allow-unauthenticated \
           --add-cloudsql-instances=${CLOUD_SQL_CONNECTION} \
-          --set-env-vars="GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
-          --set-env-vars="GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" \
-          --set-env-vars="SECRET_KEY=${SECRET_KEY}" \
-          --set-env-vars="DATABASE_URL=${DATABASE_URL}" \
-          --set-env-vars="BASE_URL=https://acro-planner-backend-733697808355.us-central1.run.app"
+          --env-vars-file="${TEMP_ENV_FILE}"
     else
         gcloud run deploy acro-planner-backend \
           --image=${REGISTRY_URL}/acro-planner-backend:latest \
@@ -100,10 +143,7 @@ if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$SECRET
           --service-account=${SERVICE_ACCOUNT} \
           --platform=managed \
           --allow-unauthenticated \
-          --set-env-vars="GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID}" \
-          --set-env-vars="GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET}" \
-          --set-env-vars="SECRET_KEY=${SECRET_KEY}" \
-          --set-env-vars="BASE_URL=https://acro-planner-backend-733697808355.us-central1.run.app"
+          --env-vars-file="${TEMP_ENV_FILE}"
     fi
 else
     echo -e "${YELLOW}Deploying without OAuth configuration...${NC}"
@@ -137,6 +177,12 @@ echo -e "${GREEN}🌐 Admin Interface: ${BACKEND_SERVICE_URL}/admin${NC}"
 # Test the deployment
 echo -e "${YELLOW}Testing backend deployment...${NC}"
 curl -s ${BACKEND_SERVICE_URL}/health | jq '.' || echo "Backend health check: ${BACKEND_SERVICE_URL}/health"
+
+# Clean up temporary Gmail env file if it exists
+if [ -n "$TEMP_ENV_FILE" ] && [ -f "$TEMP_ENV_FILE" ]; then
+    rm -f "$TEMP_ENV_FILE"
+    echo -e "${GREEN}🧹 Cleaned up temporary environment file${NC}"
+fi
 
 echo -e "${GREEN}🎉 Backend deployed successfully!${NC}"
 echo ""

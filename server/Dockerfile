@@ -30,7 +30,10 @@ RUN pip install --no-cache-dir \
     requests==2.32.3 \
     itsdangerous==2.2.0 \
     httpx==0.27.2 \
-    fastapi-login==1.10.3
+    fastapi-login==1.10.3 \
+    google-api-python-client==2.148.0 \
+    google-auth-httplib2==0.2.0 \
+    google-auth-oauthlib==1.2.1
 
 # Copy application code
 COPY . .

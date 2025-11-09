@@ -87,3 +87,41 @@ class RoleListResponse(BaseModel):
     users: List[UserResponse]
     total: int
     role: str
+
+
+class ForgotPasswordRequest(BaseModel):
+    """Schema for forgot password request."""
+    email: EmailStr
+
+
+class ForgotPasswordResponse(BaseModel):
+    """Schema for forgot password response."""
+    success: bool
+    message: str
+
+
+class ResetPasswordRequest(BaseModel):
+    """Schema for reset password request."""
+    token: str
+    new_password: str
+    confirm_password: str
+
+    @field_validator('new_password')
+    @classmethod
+    def password_strength(cls, v: str) -> str:
+        if len(v) < 8:
+            raise ValueError('Password must be at least 8 characters long')
+        return v
+
+    @field_validator('confirm_password')
+    @classmethod
+    def passwords_match(cls, v: str, info: ValidationInfo) -> str:
+        if 'new_password' in info.data and v != info.data['new_password']:
+            raise ValueError('Passwords do not match')
+        return v
+
+
+class ResetPasswordResponse(BaseModel):
+    """Schema for reset password response."""
+    success: bool
+    message: str

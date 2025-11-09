@@ -32,6 +32,7 @@ poetry.lock
 .env.local
 .env.*.local
 .env.oauth
+.env.gmail
 
 # IDE
 .vscode/

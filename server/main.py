@@ -5,7 +5,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import Depends, FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
@@ -210,6 +210,8 @@ async def rate_limit_middleware(request: Request, call_next):
         "/users/register": 5,      # 5 registrations per minute per IP
         "/auth/login": 10,         # 10 login attempts per minute per IP
         "/auth/callback": 20,      # OAuth callbacks
+        "/auth/forgot-password": 3, # 3 forgot password attempts per minute per IP
+        "/auth/reset-password": 5, # 5 reset attempts per minute per IP
         "default": 100,            # 100 requests per minute per IP for other endpoints
     }
     
@@ -587,6 +589,169 @@ async def auth_status():
         "oauth_configured": is_oauth_configured(),
         "message": "OAuth is configured" if is_oauth_configured() else "OAuth not configured - set GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET"
     }
+
+@app.post("/auth/forgot-password")
+async def forgot_password(request_data: dict, db: Session = Depends(get_db)):
+    """
+    Send password reset email to user.
+    
+    Request body should contain:
+    - email: User's email address
+    """
+    from api.schemas import ForgotPasswordRequest, ForgotPasswordResponse
+    from utils.password_reset import create_reset_token, send_reset_email
+    from models import Users
+    
+    try:
+        # Validate request data
+        request_obj = ForgotPasswordRequest(**request_data)
+        
+        # Find user by email
+        user = db.query(Users).filter(Users.email == request_obj.email).first()
+        
+        if user and not user.oauth_only:
+            # Create reset token
+            reset_token = create_reset_token(db, user.id)
+            
+            # Use backend redirect URL instead of frontend URL directly
+            base_url = os.getenv("BASE_URL", "https://acro-planner-backend-733697808355.us-central1.run.app")
+            
+            # Send reset email with backend redirect URL
+            email_sent = send_reset_email(user.email, reset_token, base_url)
+            
+            if email_sent:
+                return ForgotPasswordResponse(
+                    success=True,
+                    message="Password reset email sent successfully. Please check your email."
+                )
+            else:
+                return ForgotPasswordResponse(
+                    success=False,
+                    message="Failed to send email. Please try again later."
+                )
+        else:
+            # Always return success for security (don't reveal if email exists)
+            # But OAuth-only users can't reset password this way
+            return ForgotPasswordResponse(
+                success=True,
+                message="If the email exists and has a password, a reset link has been sent."
+            )
+            
+    except Exception as e:
+        print(f"Forgot password error: {e}")
+        return ForgotPasswordResponse(
+            success=False,
+            message="An error occurred. Please try again later."
+        )
+
+@app.post("/auth/reset-password")
+async def reset_password(request_data: dict, db: Session = Depends(get_db)):
+    """
+    Reset user password using reset token.
+    
+    Request body should contain:
+    - token: Password reset token
+    - new_password: New password
+    - confirm_password: Password confirmation
+    """
+    from api.schemas import ResetPasswordRequest, ResetPasswordResponse
+    from utils.password_reset import verify_reset_token, use_reset_token
+    from utils.auth import hash_password
+    from models import Users
+    
+    try:
+        # Validate request data
+        request_obj = ResetPasswordRequest(**request_data)
+        
+        # Verify token
+        user_id = verify_reset_token(db, request_obj.token)
+        
+        if not user_id:
+            return ResetPasswordResponse(
+                success=False,
+                message="Invalid or expired reset token."
+            )
+        
+        # Get user
+        user = db.query(Users).filter(Users.id == user_id).first()
+        
+        if not user or user.oauth_only:
+            return ResetPasswordResponse(
+                success=False,
+                message="User not found or cannot reset password."
+            )
+        
+        # Hash new password
+        password_hash, salt = hash_password(request_obj.new_password)
+        
+        # Update user password
+        user.password_hash = password_hash
+        user.salt = salt
+        db.commit()
+        
+        # Mark token as used
+        use_reset_token(db, request_obj.token)
+        
+        return ResetPasswordResponse(
+            success=True,
+            message="Password reset successfully. You can now login with your new password."
+        )
+        
+    except Exception as e:
+        print(f"Reset password error: {e}")
+        return ResetPasswordResponse(
+            success=False,
+            message="An error occurred. Please try again later."
+        )
+
+@app.get("/auth/password-reset-redirect")
+async def reset_password_redirect(token: str, request: Request, db: Session = Depends(get_db)):
+    """
+    Redirect endpoint for password reset links.
+    
+    This endpoint receives the reset token from email links and redirects 
+    to the frontend with the token as a query parameter.
+    """
+    from fastapi.responses import RedirectResponse
+    from utils.system_settings import get_frontend_url
+    import logging
+    
+    logger = logging.getLogger(__name__)
+    logger.info(f"Password reset redirect called with token: {token[:10]}...")
+    
+    # Get frontend URL from database settings
+    frontend_url = get_frontend_url(db)
+    
+    # Construct the frontend reset password URL with the token
+    # Use query parameter instead of fragment to avoid browser redirect issues
+    redirect_url = f"{frontend_url}#/reset-password?token={token}"
+    
+    logger.info(f"Redirecting to: {redirect_url}")
+    
+    # Return redirect response with explicit headers to prevent middleware interference
+    response = RedirectResponse(url=redirect_url, status_code=302)
+    response.headers["Cache-Control"] = "no-cache, no-store, must-revalidate"
+    response.headers["Pragma"] = "no-cache"
+    response.headers["Expires"] = "0"
+    response.headers["Location"] = redirect_url
+    
+    return response
+
+
+@app.get("/admin/current-frontend-url")
+async def get_current_frontend_url(db: Session = Depends(get_db)):
+    """Get the current frontend URL from system settings."""
+    from utils.system_settings import get_frontend_url
+    
+    try:
+        frontend_url = get_frontend_url(db)
+        return {
+            "success": True,
+            "frontend_url": frontend_url
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Failed to get frontend URL: {str(e)}")
+
 
 @app.post("/auth/promote-to-admin")
 async def promote_current_user_to_admin(request: Request):

@@ -48,14 +48,16 @@ else:
 serializer = URLSafeTimedSerializer(SECRET_KEY)
 
 def init_oauth_middleware(app):
-    """Initialize OAuth middleware"""
+    """Initialize OAuth middleware with path exclusions"""
+    
+    # Add session middleware normally - we'll handle exclusions at the endpoint level
     app.add_middleware(
-        SessionMiddleware, 
+        SessionMiddleware,
         secret_key=SECRET_KEY,
         same_site="none",  # Allow cross-site cookies
-        https_only=True    # Require HTTPS for security
+        https_only=True,   # Require HTTPS for security
     )
-    logger.info("OAuth middleware initialized with cross-site cookie support")
+    logger.info("OAuth middleware initialized with session middleware")
 
 async def get_current_user(request: Request) -> dict | None:
     """Get current authenticated user from JWT token"""

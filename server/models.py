@@ -7,6 +7,7 @@ Replace with your actual models as needed.
 
 
 from sqlalchemy import JSON, Boolean, Column, Date, DateTime, ForeignKey, Integer, String, Text
+from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 # Import Base from database.py to share the same metadata
 from database import Base
@@ -22,6 +23,33 @@ class Users(Base):
     password_hash = Column(String(255), nullable=True)  # Nullable for OAuth-only users
     salt = Column(String(255), nullable=True)  # Nullable for OAuth-only users
     oauth_only = Column(Boolean, default=False, nullable=False)  # Flag for OAuth-only users
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+
+
+class PasswordResetToken(Base):
+    """Password reset token model for forgot password functionality."""
+    __tablename__ = "password_reset_tokens"
+    
+    id = Column(String(36), primary_key=True)
+    user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    token = Column(String(255), unique=True, index=True, nullable=False)
+    expires_at = Column(DateTime(timezone=True), nullable=False)
+    used = Column(Boolean, default=False, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    
+    # Relationship
+    user = relationship("Users", backref="password_reset_tokens")
+
+
+class SystemSetting(Base):
+    """System settings model for storing configuration key-value pairs."""
+    __tablename__ = "system_settings"
+    
+    id = Column(String(36), primary_key=True)
+    name = Column(String(255), unique=True, nullable=False, index=True)
+    value = Column(Text, nullable=False)
+    description = Column(String(500), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

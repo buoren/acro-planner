@@ -258,6 +258,17 @@ ENVIRONMENT=production
 ./scripts/deploy.sh
 ```
 
+### Flutter Frontend Deployment
+```bash
+# Deploy Flutter frontend using deployment script
+./scripts/deploy-frontend.sh
+
+# Follow the script's instructions to update backend environment variable
+```
+
+**⚠️ Critical Flutter Deployment Note**: 
+The `deploy-frontend.sh` script automatically handles the correct `--base-href` flag required when deploying to subdirectories. Without this flag, Flutter apps will get 404 errors on assets when deployed to Google Cloud Storage subdirectories.
+
 ### Local Development
 ```bash
 # Backend (local testing)
