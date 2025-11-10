@@ -116,13 +116,29 @@ async def oauth_login(request: Request):
             request.session['oauth_return_url'] = return_url
             logger.info(f"Storing return URL from query param: {return_url}")
         else:
-            # Invalid return URL, default to Flutter app
-            request.session['oauth_return_url'] = "https://storage.googleapis.com/acro-planner-flutter-app-733697808355/index.html"
-            logger.warning(f"Invalid return URL provided: {return_url}, defaulting to Flutter app")
+            # Invalid return URL, get current frontend URL from database
+            db_gen = get_db()
+            db: Session = next(db_gen)
+            try:
+                from utils.system_settings import get_frontend_url
+                default_frontend_url = get_frontend_url(db)
+            finally:
+                db.close()
+            
+            request.session['oauth_return_url'] = default_frontend_url
+            logger.warning(f"Invalid return URL provided: {return_url}, defaulting to Flutter app from database: {default_frontend_url}")
     else:
-        # No return URL provided, default to Flutter app
-        request.session['oauth_return_url'] = "https://storage.googleapis.com/acro-planner-flutter-app-733697808355/index.html"
-        logger.info("No return URL provided, defaulting to Flutter app")
+        # No return URL provided, get current frontend URL from database
+        db_gen = get_db()
+        db: Session = next(db_gen)
+        try:
+            from utils.system_settings import get_frontend_url
+            default_frontend_url = get_frontend_url(db)
+        finally:
+            db.close()
+            
+        request.session['oauth_return_url'] = default_frontend_url
+        logger.info(f"No return URL provided, defaulting to Flutter app from database: {default_frontend_url}")
 
     redirect_uri = f"{BASE_URL}/auth/callback"
 

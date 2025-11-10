@@ -82,7 +82,7 @@ def delete_system_setting(db: Session, name: str) -> bool:
 
 def get_frontend_url(db: Session) -> str:
     """
-    Get the frontend URL from system settings with fallback.
+    Get the frontend URL from system settings, with dynamic discovery fallback.
     
     Args:
         db: Database session
@@ -91,10 +91,63 @@ def get_frontend_url(db: Session) -> str:
         Frontend URL
     """
     # Try to get from database first
-    frontend_url = get_system_setting(
+    frontend_url = get_system_setting(db, "frontend_url")
+    
+    if frontend_url:
+        return frontend_url
+    
+    # If not in database, try to discover the latest release dynamically
+    try:
+        import subprocess
+        import re
+        
+        # Query Google Cloud Storage to find the latest release
+        result = subprocess.run([
+            'gsutil', 'ls', 'gs://acro-planner-flutter-app-733697808355/'
+        ], capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            # Find all release directories
+            release_dirs = []
+            for line in result.stdout.strip().split('\n'):
+                if 'release_' in line and line.endswith('/'):
+                    # Extract release timestamp for sorting
+                    match = re.search(r'release_(\d{8}_\d{6})/', line)
+                    if match:
+                        timestamp = match.group(1)
+                        release_dirs.append((timestamp, line.rstrip('/')))
+            
+            if release_dirs:
+                # Sort by timestamp and get the latest
+                release_dirs.sort(reverse=True)
+                latest_release_path = release_dirs[0][1]
+                latest_frontend_url = f"{latest_release_path}/index.html"
+                
+                # Store in database for future use
+                set_system_setting(
+                    db, 
+                    "frontend_url", 
+                    latest_frontend_url, 
+                    "Automatically discovered frontend URL"
+                )
+                
+                return latest_frontend_url
+    
+    except Exception as e:
+        # Log the error but continue with fallback
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.warning(f"Failed to auto-discover frontend URL: {e}")
+    
+    # Ultimate fallback - this should rarely be used
+    fallback_url = "https://storage.googleapis.com/acro-planner-flutter-app-733697808355/release_20251109_212234/index.html"
+    
+    # Store the fallback in database so we don't keep hitting this code path
+    set_system_setting(
         db, 
         "frontend_url", 
-        "https://storage.googleapis.com/acro-planner-flutter-app-733697808355/release_20251109_154514/index.html"
+        fallback_url, 
+        "Fallback frontend URL - should be updated with actual latest release"
     )
     
-    return frontend_url
+    return fallback_url
