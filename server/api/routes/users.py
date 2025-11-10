@@ -12,8 +12,8 @@ from database import get_db
 from models import Users
 from utils.auth import create_password_hash
 
-from .schemas import UserRegistration, UserResponse, UserRole, UserPromoteResponse, RoleListResponse
-from .auth import require_auth, require_admin
+from ..schemas import UserRegistration, UserResponse, UserRole, UserPromoteResponse, RoleListResponse
+from ..auth import require_auth, require_admin
 from utils.roles import get_user_with_roles, add_admin_role, get_users_by_role, UserRole as UtilsUserRole, add_attendee_role
 
 router = APIRouter(prefix="/users", tags=["users"])
@@ -387,3 +387,4 @@ def get_users_by_role_endpoint(
         raise
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+

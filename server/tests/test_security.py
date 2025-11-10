@@ -202,7 +202,7 @@ class TestAuthorizationBypass:
     def test_cannot_bypass_admin_requirement(self, test_client):
         """Users cannot bypass admin requirements through parameter manipulation"""
         # Mock a non-admin user session
-        with patch('server.api.auth.require_auth') as mock_auth:
+        with patch('api.auth.require_auth') as mock_auth:
             mock_auth.return_value = {
                 'id': 'user123',
                 'roles': ['attendee'],
@@ -367,7 +367,7 @@ class TestAuthenticationIntegration:
     def test_auth_state_consistency(self, test_client):
         """Test that authentication state is consistent across requests"""
         # Mock authenticated user
-        with patch('server.api.auth.require_auth') as mock_auth:
+        with patch('api.auth.require_auth') as mock_auth:
             user_data = {
                 'id': 'user123',
                 'email': 'test@example.com',

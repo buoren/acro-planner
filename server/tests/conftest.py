@@ -5,6 +5,7 @@ This module provides shared fixtures for database sessions, test clients,
 authentication, and test data.
 """
 
+import os
 import pytest
 import ulid  # type: ignore  # ulid-py package
 from fastapi.testclient import TestClient
@@ -12,15 +13,17 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
+# Set DATABASE_URL for tests before importing main
+# Test database configuration - use SQLite in-memory for speed
+TEST_DATABASE_URL = "sqlite:///:memory:"
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+
 # Import before creating test database to register models
 from database import Base, get_db
 from main import app
 from models import Users, Attendees, Hosts, Admins
 from utils.auth import create_password_hash
 from utils.roles import add_attendee_role, add_host_role, add_admin_role
-
-# Test database configuration - use SQLite in-memory for speed
-TEST_DATABASE_URL = "sqlite:///:memory:"
 
 test_engine = create_engine(
     TEST_DATABASE_URL,
