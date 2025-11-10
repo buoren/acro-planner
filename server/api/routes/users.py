@@ -18,12 +18,6 @@ from utils.roles import get_user_with_roles, add_admin_role, get_users_by_role, 
 
 router = APIRouter(prefix="/users", tags=["users"])
 
-
-@router.get("/debug-no-auth", response_model=dict)
-def get_all_users_debug_no_auth(db: Session = Depends(get_db)):
-    """Debug endpoint to test users without auth"""
-    return {"message": "Users endpoint works without auth", "status": "ok"}
-
 @router.get("/", response_model=list[UserResponse])
 def get_all_users(user: dict = Depends(require_admin), db: Session = Depends(get_db)):
     """

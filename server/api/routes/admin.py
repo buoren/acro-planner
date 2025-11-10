@@ -61,35 +61,3 @@ async def get_current_frontend_url(db: Session = Depends(get_db)):
         }
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Failed to get frontend URL: {str(e)}")
-
-
-@router.post("/update-frontend-url")
-async def update_frontend_url(request_data: dict, db: Session = Depends(get_db)):
-    """Update the frontend URL in system settings."""
-    try:
-        frontend_url = request_data.get("frontend_url")
-        if not frontend_url:
-            raise HTTPException(status_code=400, detail="frontend_url is required")
-        
-        # Validate URL format
-        if not frontend_url.startswith("https://"):
-            raise HTTPException(status_code=400, detail="Frontend URL must use HTTPS")
-        
-        # Update the setting
-        set_system_setting(
-            db, 
-            "frontend_url", 
-            frontend_url, 
-            "Updated via admin API"
-        )
-        
-        return {
-            "success": True,
-            "message": "Frontend URL updated successfully",
-            "frontend_url": frontend_url
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Failed to update frontend URL: {str(e)}")
-

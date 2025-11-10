@@ -32,23 +32,6 @@ async def favicon():
     return Response(content=favicon_bytes, media_type="image/png")
 
 
-@router.get("/debug/routes")
-async def debug_routes(request: Request):
-    """Debug endpoint to list all registered routes"""
-    from fastapi import FastAPI
-    app: FastAPI = request.app
-    
-    routes = []
-    for route in app.routes:
-        if hasattr(route, 'path') and hasattr(route, 'methods'):
-            routes.append({
-                "path": route.path,
-                "methods": list(route.methods) if route.methods else [],
-                "name": getattr(route, 'name', None)
-            })
-    return {"routes": routes}
-
-
 @router.get("/access-denied")
 async def access_denied(request: Request):
     """Serve access denied page for non-admin users"""
@@ -83,10 +66,3 @@ async def access_denied(request: Request):
             "Content-Security-Policy": "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self';"
         }
     )
-
-
-@router.get("/debug/users-test")
-async def debug_users_test():
-    """Debug endpoint to test basic users routing without auth"""
-    return {"message": "Users routing works", "status": "ok"}
-
