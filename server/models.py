@@ -62,9 +62,10 @@ class Equipment(Base):
     name = Column(String(200), nullable=False)
     description = Column(String(1000))
     media = Column(JSON)
+    convention_id = Column(String(36), ForeignKey("conventions.id"), nullable=False)
 
 
-class Location(Base):
+class Locations(Base):
     """Location model for acrobatics classes/sessions."""
     __tablename__ = "locations"
 
@@ -72,6 +73,7 @@ class Location(Base):
     name = Column(String(200), nullable=False)
     details = Column(JSON)
     equipment_ids = Column(JSON)
+    convention_id = Column(String(36), ForeignKey("conventions.id"), nullable=False)
 
 
 class Capabilities(Base):
@@ -105,7 +107,7 @@ class EventSlot(Base):
     location_id = Column(String(36), ForeignKey("locations.id"), nullable=False)
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
-    event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
+    event_id = Column(String(36), ForeignKey("events.id"), nullable=True)
     day_number = Column(Integer, nullable=False)
 
 
@@ -165,18 +167,6 @@ class Selections(Base):
     attendee_id = Column(String(36), ForeignKey("attendees.id"), nullable=False)
     event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
     is_selected = Column(Boolean, default=False)
-
-
-class PasswordReset(Base):
-    """Password reset table for temporary password reset tokens."""
-    __tablename__ = "password_reset"
-
-    id = Column(String(36), primary_key=True)
-    user_id = Column(String(36), ForeignKey("users.id"), nullable=False, index=True)
-    temporary_password_hash = Column(String(255), nullable=False)
-    salt = Column(String(255), nullable=False)
-    created_at = Column(DateTime(timezone=True), server_default=func.now(), nullable=False)
-    is_consumed = Column(Boolean, default=False, nullable=False)
 
 
 # Example of how to use the models in your FastAPI app:

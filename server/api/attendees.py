@@ -152,7 +152,8 @@ class AttendeeManager:
 
     def register_for_convention(self, user_id: str, convention_id: str) -> Attendees:
         """
-        Register a user for a convention.
+        Second half of registration.  We're presuming here that the user has now
+        paid for the convention.
         
         Args:
             user_id: User ID to register
