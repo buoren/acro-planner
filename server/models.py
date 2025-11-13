@@ -23,6 +23,9 @@ class Users(Base):
     password_hash = Column(String(255), nullable=True)  # Nullable for OAuth-only users
     salt = Column(String(255), nullable=True)  # Nullable for OAuth-only users
     oauth_only = Column(Boolean, default=False, nullable=False)  # Flag for OAuth-only users
+    user_info = Column(JSON, nullable=True)
+    contact_info = Column(JSON, nullable=True)
+    is_verified = Column(Boolean, default=False, nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -148,6 +151,15 @@ class Hosts(Base):
     photos = Column(JSON)
     links = Column(JSON)
 
+class HostEvents(Base):
+    """Host events join table for acrobatics classes/sessions."""
+    __tablename__ = "host_events"
+
+    id = Column(String(36), primary_key=True)
+    host_id = Column(String(36), ForeignKey("hosts.id"), nullable=False)
+    event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 class Admins(Base):
     """Admins model for administrative users."""
@@ -157,7 +169,6 @@ class Admins(Base):
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False, unique=True, index=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
-
 
 class Selections(Base):
     """Selections model for user's choices of events."""
