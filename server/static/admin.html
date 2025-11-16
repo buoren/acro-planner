@@ -49,11 +49,11 @@
         .main-container {
             flex: 1;
             display: flex;
-            padding: 2rem;
-            gap: 2rem;
-            max-width: 1200px;
+            max-width: 1400px;
             margin: 0 auto;
             width: 100%;
+            gap: 2rem;
+            padding: 2rem;
         }
 
         .sidebar {
@@ -61,32 +61,31 @@
             backdrop-filter: blur(10px);
             border-radius: 15px;
             padding: 2rem;
-            width: 300px;
+            min-width: 250px;
             height: fit-content;
-            color: white;
         }
 
         .content {
             flex: 1;
-            background: rgba(255, 255, 255, 0.1);
-            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
             border-radius: 15px;
             padding: 2rem;
-            color: white;
+            overflow-y: auto;
         }
 
         .nav-item {
+            display: block;
             padding: 0.75rem 1rem;
             margin: 0.5rem 0;
-            border-radius: 8px;
-            cursor: pointer;
-            transition: all 0.3s ease;
-            border: none;
-            background: none;
+            text-decoration: none;
             color: white;
+            border-radius: 8px;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
             width: 100%;
             text-align: left;
-            font-size: 1rem;
         }
 
         .nav-item:hover {
@@ -96,480 +95,1218 @@
 
         .nav-item.active {
             background: rgba(255, 255, 255, 0.2);
+            font-weight: 600;
         }
 
-        .btn {
-            background: linear-gradient(45deg, #ff6b6b, #ee5a24);
-            color: white;
-            border: none;
-            padding: 0.75rem 1.5rem;
-            border-radius: 8px;
-            cursor: pointer;
-            font-size: 1rem;
-            transition: all 0.3s ease;
-            text-decoration: none;
-            display: inline-block;
+        .section {
+            display: none;
         }
 
-        .btn:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
-        }
-
-        .btn-secondary {
-            background: linear-gradient(45deg, #74b9ff, #0984e3);
+        .section.active {
+            display: block;
         }
 
         .card {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 10px;
+            background: white;
+            border-radius: 12px;
             padding: 1.5rem;
             margin: 1rem 0;
-            backdrop-filter: blur(5px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
         .form-group {
-            margin: 1rem 0;
+            margin-bottom: 1rem;
         }
 
         .form-group label {
             display: block;
             margin-bottom: 0.5rem;
-            font-weight: 500;
-        }
-
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 0.75rem;
-            border: 1px solid rgba(255, 255, 255, 0.3);
-            border-radius: 5px;
-            background: rgba(255, 255, 255, 0.1);
-            color: white;
-            font-size: 1rem;
-        }
-
-        .form-group input::placeholder {
-            color: rgba(255, 255, 255, 0.7);
-        }
-
-        .users-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 1rem 0;
-        }
-
-        .users-table th, .users-table td {
-            padding: 0.75rem;
-            text-align: left;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-        }
-
-        .users-table th {
-            background: rgba(255, 255, 255, 0.1);
             font-weight: 600;
+            color: #333;
         }
 
-        .loading {
-            text-align: center;
-            padding: 2rem;
-            opacity: 0.7;
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 0.75rem;
+            border: 2px solid #e1e5e9;
+            border-radius: 8px;
+            font-size: 1rem;
+            transition: border-color 0.3s ease;
         }
 
-        .error {
-            background: rgba(231, 76, 60, 0.2);
-            border: 1px solid rgba(231, 76, 60, 0.5);
-            color: #fff;
-            padding: 1rem;
-            border-radius: 5px;
-            margin: 1rem 0;
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
         }
 
-        .success {
-            background: rgba(46, 204, 113, 0.2);
-            border: 1px solid rgba(46, 204, 113, 0.5);
-            color: #fff;
-            padding: 1rem;
-            border-radius: 5px;
-            margin: 1rem 0;
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 0.5rem 0.5rem 0.5rem 0;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, #94a3b8 0%, #64748b 100%);
+        }
+
+        .btn-danger {
+            background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
         }
 
         .hidden {
+            display: none !important;
+        }
+
+        .table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 1rem;
+        }
+
+        .table th,
+        .table td {
+            padding: 1rem;
+            text-align: left;
+            border-bottom: 1px solid #e1e5e9;
+        }
+
+        .table th {
+            background: #f8fafc;
+            font-weight: 600;
+        }
+
+        .table tr:hover {
+            background: #f8fafc;
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 1rem;
+            margin: 1rem 0;
+        }
+
+        .status-indicator {
+            display: inline-block;
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+            margin-right: 0.5rem;
+        }
+
+        .status-active { background: #10b981; }
+        .status-inactive { background: #ef4444; }
+        .status-pending { background: #f59e0b; }
+
+        .alert {
+            padding: 1rem;
+            border-radius: 8px;
+            margin: 1rem 0;
+        }
+
+        .alert-success {
+            background: #dcfce7;
+            color: #166534;
+            border: 1px solid #bbf7d0;
+        }
+
+        .alert-error {
+            background: #fecaca;
+            color: #991b1b;
+            border: 1px solid #fca5a5;
+        }
+
+        .alert-info {
+            background: #dbeafe;
+            color: #1e40af;
+            border: 1px solid #93c5fd;
+        }
+
+        .modal {
             display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background-color: white;
+            margin: 5% auto;
+            padding: 2rem;
+            border-radius: 15px;
+            width: 80%;
+            max-width: 600px;
+            position: relative;
+        }
+
+        .close {
+            position: absolute;
+            right: 1rem;
+            top: 1rem;
+            color: #aaa;
+            font-size: 28px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+
+        .close:hover {
+            color: black;
+        }
+
+        .tag {
+            display: inline-block;
+            background: #e5e7eb;
+            color: #374151;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-size: 0.875rem;
+            margin: 0.25rem;
+        }
+
+        .prerequisite-chain {
+            background: #f3f4f6;
+            border: 2px dashed #d1d5db;
+            border-radius: 8px;
+            padding: 1rem;
+            margin: 0.5rem 0;
+        }
+
+        .equipment-list {
+            list-style: none;
+            padding: 0;
+        }
+
+        .equipment-item {
+            background: #f8fafc;
+            padding: 0.75rem;
+            margin: 0.5rem 0;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .main-container {
+                flex-direction: column;
+                padding: 1rem;
+            }
+            
+            .sidebar {
+                min-width: unset;
+            }
+            
+            .grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading {
+            opacity: 0.6;
+            pointer-events: none;
         }
     </style>
 </head>
 <body>
-    <div class="header">
-        <h1>🤸 Acro Planner Admin</h1>
+    <header class="header">
+        <h1>🎪 Acro Planner Admin</h1>
         <div class="user-info">
-            <div class="user-avatar" id="userAvatar">👤</div>
-            <div>
-                <div id="userName">Loading...</div>
-                <div style="font-size: 0.8rem; opacity: 0.8;" id="userEmail"></div>
-            </div>
+            <div class="user-avatar">A</div>
+            <span id="user-name">Loading...</span>
             <a href="/auth/logout" class="btn btn-secondary">Logout</a>
         </div>
-    </div>
+    </header>
 
     <div class="main-container">
-        <div class="sidebar">
-            <h3 style="margin-bottom: 1rem;">Navigation</h3>
+        <nav class="sidebar">
+            <h3 style="margin-bottom: 1rem; color: white;">Navigation</h3>
             <button class="nav-item active" onclick="showSection('dashboard')">📊 Dashboard</button>
+            <button class="nav-item" onclick="showSection('conventions')">🎪 Conventions</button>
+            <button class="nav-item" onclick="showSection('locations')">📍 Locations</button>
+            <button class="nav-item" onclick="showSection('event-slots')">⏰ Event Slots</button>
+            <button class="nav-item" onclick="showSection('prerequisites')">🎯 Prerequisites</button>
+            <button class="nav-item" onclick="showSection('equipment')">⚙️ Equipment</button>
             <button class="nav-item" onclick="showSection('users')">👥 Users</button>
             <button class="nav-item" onclick="showSection('settings')">⚙️ Settings</button>
-            <button class="nav-item" onclick="showSection('auth-status')">🔐 Auth Status</button>
-        </div>
+        </nav>
 
-        <div class="content">
+        <main class="content">
             <!-- Dashboard Section -->
-            <div id="dashboard" class="section">
-                <h2>Dashboard</h2>
+            <div id="dashboard" class="section active">
+                <h2>Admin Dashboard</h2>
+                <div id="stats-grid" class="grid">
+                    <div class="card">
+                        <h3>Total Conventions</h3>
+                        <div style="font-size: 2rem; font-weight: bold; color: #667eea;" id="stats-conventions">-</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Locations</h3>
+                        <div style="font-size: 2rem; font-weight: bold; color: #10b981;" id="stats-locations">-</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Workshops</h3>
+                        <div style="font-size: 2rem; font-weight: bold; color: #f59e0b;" id="stats-workshops">-</div>
+                    </div>
+                    <div class="card">
+                        <h3>Total Users</h3>
+                        <div style="font-size: 2rem; font-weight: bold; color: #ef4444;" id="stats-users">-</div>
+                    </div>
+                </div>
+                
                 <div class="card">
-                    <h3>Welcome to Acro Planner Admin! 🎉</h3>
-                    <p>You are successfully authenticated and can access the admin interface.</p>
-                    <br>
-                    <div id="dashboardStats">
-                        <p><strong>Total Users:</strong> <span id="totalUsers">Loading...</span></p>
-                        <p><strong>System Status:</strong> <span style="color: #2ecc71;">Operational</span></p>
+                    <h3>Recent Activity</h3>
+                    <div id="recent-activity">
+                        <p>Loading recent activity...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conventions Section -->
+            <div id="conventions" class="section">
+                <h2>Convention Management</h2>
+                
+                <div class="card">
+                    <h3>Create New Convention</h3>
+                    <form id="convention-form">
+                        <div class="form-group">
+                            <label for="convention-name">Convention Name</label>
+                            <input type="text" id="convention-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="convention-description">Description</label>
+                            <textarea id="convention-description" rows="3"></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label for="convention-start">Start Date</label>
+                                <input type="date" id="convention-start" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="convention-end">End Date</label>
+                                <input type="date" id="convention-end" required>
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">Create Convention</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>Existing Conventions</h3>
+                    <div id="conventions-list">
+                        <div class="spinner"></div> Loading conventions...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Locations Section -->
+            <div id="locations" class="section">
+                <h2>Location Management</h2>
+                
+                <div class="card">
+                    <h3>Add New Location</h3>
+                    <form id="location-form">
+                        <div class="form-group">
+                            <label for="location-convention">Convention</label>
+                            <select id="location-convention" required>
+                                <option value="">Select Convention</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="location-name">Location Name</label>
+                            <input type="text" id="location-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="location-description">Description</label>
+                            <textarea id="location-description" rows="2"></textarea>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                            <div class="form-group">
+                                <label for="location-capacity">Capacity</label>
+                                <input type="number" id="location-capacity" min="1">
+                            </div>
+                            <div class="form-group">
+                                <label for="location-address">Address</label>
+                                <input type="text" id="location-address">
+                            </div>
+                        </div>
+                        <button type="submit" class="btn">Add Location</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>Existing Locations</h3>
+                    <div id="locations-list">
+                        <div class="spinner"></div> Loading locations...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Event Slots Section -->
+            <div id="event-slots" class="section">
+                <h2>Event Slot Management</h2>
+                
+                <div class="card">
+                    <h3>Bulk Create Event Slots</h3>
+                    <form id="bulk-slots-form">
+                        <div class="form-group">
+                            <label for="slots-convention">Convention</label>
+                            <select id="slots-convention" required>
+                                <option value="">Select Convention</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="slots-locations">Locations</label>
+                            <select id="slots-locations" multiple size="4" required>
+                                <!-- Populated dynamically based on convention -->
+                            </select>
+                            <small>Hold Ctrl/Cmd to select multiple locations</small>
+                        </div>
+                        <div class="form-group">
+                            <label for="slots-days">Number of Days</label>
+                            <input type="number" id="slots-days" min="1" max="30" value="3" required>
+                        </div>
+                        <div class="form-group">
+                            <label>Time Slots</label>
+                            <div id="time-slots-container">
+                                <div class="time-slot-row" style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; margin: 0.5rem 0;">
+                                    <input type="time" value="09:00" placeholder="Start Time">
+                                    <input type="time" value="10:30" placeholder="End Time">
+                                    <button type="button" class="btn btn-danger" onclick="removeTimeSlot(this)">Remove</button>
+                                </div>
+                            </div>
+                            <button type="button" class="btn btn-secondary" onclick="addTimeSlot()">Add Time Slot</button>
+                        </div>
+                        <button type="submit" class="btn btn-success">Create Bulk Slots</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>Existing Event Slots</h3>
+                    <div class="form-group">
+                        <label for="filter-slots-convention">Filter by Convention</label>
+                        <select id="filter-slots-convention">
+                            <option value="">All Conventions</option>
+                        </select>
+                    </div>
+                    <div id="event-slots-list">
+                        <div class="spinner"></div> Loading event slots...
+                    </div>
+                </div>
+            </div>
+
+            <!-- Prerequisites Section -->
+            <div id="prerequisites" class="section">
+                <h2>Prerequisites Management</h2>
+                
+                <div class="card">
+                    <h3>Create New Prerequisite</h3>
+                    <form id="prerequisite-form">
+                        <div class="form-group">
+                            <label for="prerequisite-name">Prerequisite Name</label>
+                            <input type="text" id="prerequisite-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="prerequisite-description">Description</label>
+                            <textarea id="prerequisite-description" rows="3" required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="prerequisite-parents">Parent Prerequisites (optional)</label>
+                            <select id="prerequisite-parents" multiple size="4">
+                                <!-- Populated dynamically -->
+                            </select>
+                            <small>Hold Ctrl/Cmd to select multiple parent prerequisites</small>
+                        </div>
+                        <button type="submit" class="btn">Create Prerequisite</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>Existing Prerequisites</h3>
+                    <div id="prerequisites-list">
+                        <div class="spinner"></div> Loading prerequisites...
+                    </div>
+                </div>
+
+                <div class="card">
+                    <h3>Prerequisite Chain Visualization</h3>
+                    <div id="prerequisite-chain">
+                        <p>Select prerequisites above to see their dependency chain</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Equipment Section -->
+            <div id="equipment" class="section">
+                <h2>Equipment Management</h2>
+                
+                <div class="card">
+                    <h3>Add New Equipment</h3>
+                    <form id="equipment-form">
+                        <div class="form-group">
+                            <label for="equipment-location">Location</label>
+                            <select id="equipment-location" required>
+                                <option value="">Select Location</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="equipment-name">Equipment Name</label>
+                            <input type="text" id="equipment-name" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="equipment-description">Description</label>
+                            <textarea id="equipment-description" rows="2"></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label for="equipment-quantity">Quantity</label>
+                            <input type="number" id="equipment-quantity" min="1" value="1" required>
+                        </div>
+                        <button type="submit" class="btn">Add Equipment</button>
+                    </form>
+                </div>
+
+                <div class="card">
+                    <h3>Existing Equipment</h3>
+                    <div class="form-group">
+                        <label for="filter-equipment-location">Filter by Location</label>
+                        <select id="filter-equipment-location">
+                            <option value="">All Locations</option>
+                        </select>
+                    </div>
+                    <div id="equipment-list">
+                        <div class="spinner"></div> Loading equipment...
                     </div>
                 </div>
             </div>
 
             <!-- Users Section -->
-            <div id="users" class="section hidden">
+            <div id="users" class="section">
                 <h2>User Management</h2>
                 
                 <div class="card">
-                    <h3>Add New User</h3>
-                    <form id="addUserForm">
-                        <div class="form-group">
-                            <label for="name">Name:</label>
-                            <input type="text" id="name" name="name" required>
+                    <h3>User Statistics</h3>
+                    <div class="grid">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold;" id="users-total">-</div>
+                            <div>Total Users</div>
                         </div>
-                        <div class="form-group">
-                            <label for="email">Email:</label>
-                            <input type="email" id="email" name="email" required>
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold;" id="users-admins">-</div>
+                            <div>Admins</div>
                         </div>
-                        <div class="form-group">
-                            <label for="password">Password:</label>
-                            <input type="password" id="password" name="password" required minlength="6">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold;" id="users-hosts">-</div>
+                            <div>Hosts</div>
                         </div>
-                        <div class="form-group">
-                            <label for="confirmPassword">Confirm Password:</label>
-                            <input type="password" id="confirmPassword" name="confirmPassword" required minlength="6">
+                        <div style="text-align: center;">
+                            <div style="font-size: 1.5rem; font-weight: bold;" id="users-attendees">-</div>
+                            <div>Attendees</div>
                         </div>
-                        <div class="form-group">
-                            <label for="role">Role:</label>
-                            <select id="role" name="role">
-                                <option value="attendee">Attendee</option>
-                                <option value="host">Host</option>
-                                <option value="admin">Admin</option>
-                            </select>
-                        </div>
-                        <button type="submit" class="btn">Add User</button>
-                    </form>
+                    </div>
                 </div>
 
                 <div class="card">
-                    <h3>Existing Users</h3>
-                    <div id="usersTableContainer">
-                        <div class="loading">Loading users...</div>
+                    <h3>All Users</h3>
+                    <div id="users-list">
+                        <div class="spinner"></div> Loading users...
                     </div>
                 </div>
             </div>
 
             <!-- Settings Section -->
-            <div id="settings" class="section hidden">
-                <h2>Settings</h2>
+            <div id="settings" class="section">
+                <h2>System Settings</h2>
+                
                 <div class="card">
-                    <h3>Application Settings</h3>
-                    <p>Configuration options and system settings will be available here.</p>
+                    <h3>API Configuration</h3>
+                    <div id="api-status">
+                        <div class="spinner"></div> Checking API status...
+                    </div>
                 </div>
-            </div>
 
-            <!-- Auth Status Section -->
-            <div id="auth-status" class="section hidden">
-                <h2>Authentication Status</h2>
                 <div class="card">
-                    <h3>OAuth Configuration</h3>
-                    <div id="authStatusContent">
-                        <div class="loading">Checking authentication status...</div>
+                    <h3>Database Status</h3>
+                    <div id="db-status">
+                        <div class="spinner"></div> Checking database status...
                     </div>
                 </div>
             </div>
+        </main>
+    </div>
+
+    <!-- Loading Modal -->
+    <div id="loading-modal" class="modal">
+        <div class="modal-content" style="text-align: center; width: 300px;">
+            <div class="spinner" style="margin: 2rem auto;"></div>
+            <p id="loading-message">Processing...</p>
         </div>
     </div>
 
     <script>
         // Global variables
         let currentUser = null;
+        let conventions = [];
+        let locations = [];
+        let prerequisites = [];
+
+        // API Configuration
         const API_BASE = window.location.origin;
 
         // Initialize the application
         document.addEventListener('DOMContentLoaded', function() {
-            loadCurrentUser();
-            loadAuthStatus();
-            loadUsers();
+            loadUser();
+            loadDashboardStats();
+            loadAllData();
         });
 
-        // Load current user information with retry logic
-        async function loadCurrentUser(retryCount = 0) {
-            const maxRetries = 3;
-            const retryDelay = 1000;
-            
+        // User Management
+        async function loadUser() {
             try {
-                const response = await fetch(`${API_BASE}/auth/me`, {
-                    credentials: 'include'
-                });
-                
-                // Retry on 404 (transient startup issue)
-                if (response.status === 404 && retryCount < maxRetries) {
-                    console.log(`Auth/me endpoint returned 404, retrying in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries + 1})`);
-                    setTimeout(() => loadCurrentUser(retryCount + 1), retryDelay);
-                    return;
-                }
-                
-                const data = await response.json();
-                
-                if (data.authenticated && data.user) {
-                    currentUser = data.user;
-                    document.getElementById('userName').textContent = data.user.name || 'Admin User';
-                    document.getElementById('userEmail').textContent = data.user.email || '';
-                    
-                    // Set user avatar
-                    const avatar = document.getElementById('userAvatar');
-                    if (data.user.picture) {
-                        avatar.innerHTML = `<img src="${data.user.picture}" alt="Avatar" style="width: 100%; height: 100%; border-radius: 50%; object-fit: cover;">`;
-                    } else {
-                        avatar.textContent = (data.user.name || 'A')[0].toUpperCase();
-                    }
+                const response = await fetch(`${API_BASE}/auth/me`);
+                if (response.ok) {
+                    currentUser = await response.json();
+                    document.getElementById('user-name').textContent = currentUser.name || 'Admin';
                 } else {
-                    // Not authenticated, redirect to login
-                    window.location.href = `${API_BASE}/auth/login`;
+                    document.getElementById('user-name').textContent = 'Admin User';
                 }
             } catch (error) {
                 console.error('Error loading user:', error);
-                showError('Failed to load user information');
+                document.getElementById('user-name').textContent = 'Admin User';
             }
         }
 
-        // Load authentication status with retry logic
-        async function loadAuthStatus(retryCount = 0) {
-            const maxRetries = 3;
-            const retryDelay = 1000;
-            
+        // Navigation
+        function showSection(sectionName) {
+            // Update navigation
+            document.querySelectorAll('.nav-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.classList.add('active');
+
+            // Update content
+            document.querySelectorAll('.section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionName).classList.add('active');
+
+            // Load section-specific data
+            loadSectionData(sectionName);
+        }
+
+        function loadSectionData(sectionName) {
+            switch(sectionName) {
+                case 'conventions':
+                    loadConventions();
+                    break;
+                case 'locations':
+                    loadLocations();
+                    loadConventionsDropdown();
+                    break;
+                case 'event-slots':
+                    loadEventSlots();
+                    loadConventionsDropdown();
+                    break;
+                case 'prerequisites':
+                    loadPrerequisites();
+                    break;
+                case 'equipment':
+                    loadEquipment();
+                    loadLocationsDropdown();
+                    break;
+                case 'users':
+                    loadUsers();
+                    break;
+                case 'settings':
+                    loadSystemStatus();
+                    break;
+            }
+        }
+
+        // Dashboard Stats
+        async function loadDashboardStats() {
             try {
-                const response = await fetch(`${API_BASE}/auth/status`, {
-                    credentials: 'include'
-                });
-                
-                // Retry on 404 (transient startup issue)
-                if (response.status === 404 && retryCount < maxRetries) {
-                    console.log(`Auth/status endpoint returned 404, retrying in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries + 1})`);
-                    setTimeout(() => loadAuthStatus(retryCount + 1), retryDelay);
-                    return;
+                // Load conventions count
+                const conventionsResponse = await fetch(`${API_BASE}/conventions/`);
+                if (conventionsResponse.ok) {
+                    const conventions = await conventionsResponse.json();
+                    document.getElementById('stats-conventions').textContent = conventions.length;
                 }
-                
-                const data = await response.json();
-                
-                const container = document.getElementById('authStatusContent');
-                container.innerHTML = `
-                    <p><strong>OAuth Configured:</strong> ${data.oauth_configured ? '✅ Yes' : '❌ No'}</p>
-                    <p><strong>Status:</strong> ${data.message}</p>
-                    <p><strong>Current User:</strong> ${currentUser ? currentUser.email : 'Loading...'}</p>
+
+                // Load workshops count
+                const workshopsResponse = await fetch(`${API_BASE}/workshops/`);
+                if (workshopsResponse.ok) {
+                    const workshops = await workshopsResponse.json();
+                    document.getElementById('stats-workshops').textContent = workshops.length;
+                }
+
+                // Load users count
+                const usersResponse = await fetch(`${API_BASE}/users/`);
+                if (usersResponse.ok) {
+                    const users = await usersResponse.json();
+                    document.getElementById('stats-users').textContent = users.total || users.length || '-';
+                }
+
+                // Simulate recent activity
+                document.getElementById('recent-activity').innerHTML = `
+                    <div style="padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+                        <strong>Admin Dashboard Loaded</strong> - Just now
+                    </div>
+                    <div style="padding: 0.5rem 0; border-bottom: 1px solid #e5e7eb;">
+                        <strong>API Status</strong> - All systems operational
+                    </div>
                 `;
+
             } catch (error) {
-                console.error('Error loading auth status:', error);
-                document.getElementById('authStatusContent').innerHTML = '<p class="error">Failed to load authentication status</p>';
+                console.error('Error loading dashboard stats:', error);
             }
         }
 
-        // Load users from the API with retry logic
-        async function loadUsers(retryCount = 0) {
-            const maxRetries = 3;
-            const retryDelay = 1000; // 1 second
-            
+        // Convention Management
+        async function loadConventions() {
             try {
-                const response = await fetch(`${API_BASE}/users/`, {
-                    credentials: 'include'
-                });
-                
-                // If we get a 404, it might be a transient startup issue - retry
-                if (response.status === 404 && retryCount < maxRetries) {
-                    console.log(`Users endpoint returned 404, retrying in ${retryDelay}ms (attempt ${retryCount + 1}/${maxRetries + 1})`);
-                    setTimeout(() => loadUsers(retryCount + 1), retryDelay);
-                    return;
+                const response = await fetch(`${API_BASE}/conventions/`);
+                if (response.ok) {
+                    conventions = await response.json();
+                    renderConventions();
+                } else {
+                    document.getElementById('conventions-list').innerHTML = '<p>Error loading conventions</p>';
                 }
-                
-                if (response.status === 403) {
-                    document.getElementById('usersTableContainer').innerHTML = `
-                        <p class="error">Admin privileges required to view users</p>
-                        <button class="btn" onclick="promoteToAdmin()">Promote Current User to Admin</button>
-                    `;
-                    document.getElementById('totalUsers').textContent = 'N/A';
-                    return;
-                }
-                
-                if (response.status === 404) {
-                    document.getElementById('usersTableContainer').innerHTML = '<p class="error">Users endpoint not found after retries</p>';
-                    document.getElementById('totalUsers').textContent = 'N/A';
-                    return;
-                }
-                
-                if (!response.ok) {
-                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-                }
-                
-                const users = await response.json();
-                
-                // Ensure users is an array
-                if (!Array.isArray(users)) {
-                    console.error('Users response is not an array:', users);
-                    document.getElementById('usersTableContainer').innerHTML = '<p class="error">Invalid user data format</p>';
-                    document.getElementById('totalUsers').textContent = 'Error';
-                    return;
-                }
-                
-                displayUsers(users);
-                document.getElementById('totalUsers').textContent = users.length;
             } catch (error) {
-                console.error('Error loading users:', error);
-                document.getElementById('usersTableContainer').innerHTML = `<p class="error">Failed to load users: ${error.message}</p>`;
-                document.getElementById('totalUsers').textContent = 'Error';
+                console.error('Error loading conventions:', error);
+                document.getElementById('conventions-list').innerHTML = '<p>Error loading conventions</p>';
             }
         }
 
-        // Display users in a table
-        function displayUsers(users) {
-            const container = document.getElementById('usersTableContainer');
-            
-            if (!users || users.length === 0) {
-                container.innerHTML = '<p>No users found.</p>';
+        function renderConventions() {
+            const container = document.getElementById('conventions-list');
+            if (conventions.length === 0) {
+                container.innerHTML = '<p>No conventions found. Create one above!</p>';
                 return;
             }
 
-            const tableHTML = `
-                <table class="users-table">
-                    <thead>
-                        <tr>
-                            <th>ID</th>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Role</th>
-                            <th>Created</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${users.map(user => `
-                            <tr>
-                                <td>${user.id || 'N/A'}</td>
-                                <td>${user.name || 'N/A'}</td>
-                                <td>${user.email || 'N/A'}</td>
-                                <td>${Array.isArray(user.roles) ? user.roles.join(', ') : (user.role || 'attendee')}</td>
-                                <td>${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'N/A'}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-            `;
-            
-            container.innerHTML = tableHTML;
+            container.innerHTML = conventions.map(convention => `
+                <div class="card">
+                    <h4>${convention.name}</h4>
+                    <p>${convention.description || 'No description'}</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
+                        <div><strong>Start:</strong> ${new Date(convention.start_date).toLocaleDateString()}</div>
+                        <div><strong>End:</strong> ${new Date(convention.end_date).toLocaleDateString()}</div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <button class="btn btn-secondary" onclick="editConvention('${convention.id}')">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteConvention('${convention.id}')">Delete</button>
+                        <button class="btn" onclick="viewConventionDetails('${convention.id}')">View Details</button>
+                    </div>
+                </div>
+            `).join('');
         }
 
-        // Handle user form submission
-        document.getElementById('addUserForm').addEventListener('submit', async function(e) {
+        // Convention Form Handler
+        document.getElementById('convention-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             
-            const formData = new FormData(e.target);
-            const password = formData.get('password');
-            const confirmPassword = formData.get('confirmPassword');
-            
-            // Validate passwords match
-            if (password !== confirmPassword) {
-                showError('Passwords do not match. Please try again.');
-                return;
-            }
-            
-            const userData = {
-                name: formData.get('name'),
-                email: formData.get('email'),
-                password: password,
-                password_confirm: confirmPassword,
-                role: formData.get('role')  // Include the selected role
+            const formData = {
+                name: document.getElementById('convention-name').value,
+                description: document.getElementById('convention-description').value,
+                start_date: document.getElementById('convention-start').value + 'T00:00:00',
+                end_date: document.getElementById('convention-end').value + 'T23:59:59',
+                location_ids: []
             };
 
             try {
-                const response = await fetch(`${API_BASE}/users/register`, {
+                showLoading('Creating convention...');
+                const response = await fetch(`${API_BASE}/conventions/`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
                     },
-                    credentials: 'include',
-                    body: JSON.stringify(userData)
+                    body: JSON.stringify(formData)
                 });
 
                 if (response.ok) {
-                    showSuccess('User added successfully!');
-                    e.target.reset();
-                    loadUsers(); // Refresh the users list
+                    showAlert('Convention created successfully!', 'success');
+                    this.reset();
+                    loadConventions();
                 } else {
-                    const error = await response.text();
-                    showError(`Failed to add user: ${error}`);
+                    const error = await response.json();
+                    showAlert(`Error: ${error.detail}`, 'error');
                 }
             } catch (error) {
-                console.error('Error adding user:', error);
-                showError('Failed to add user');
+                console.error('Error creating convention:', error);
+                showAlert('Error creating convention', 'error');
+            } finally {
+                hideLoading();
             }
         });
 
-        // Show different sections
-        function showSection(sectionName) {
-            // Hide all sections
-            document.querySelectorAll('.section').forEach(section => {
-                section.classList.add('hidden');
-            });
+        // Location Management
+        async function loadLocations() {
+            try {
+                const response = await fetch(`${API_BASE}/conventions/`);
+                if (response.ok) {
+                    const conventionsList = await response.json();
+                    
+                    // Get locations from all conventions
+                    locations = [];
+                    for (const conv of conventionsList) {
+                        const locResponse = await fetch(`${API_BASE}/conventions/${conv.id}/locations`);
+                        if (locResponse.ok) {
+                            const convLocations = await locResponse.json();
+                            locations.push(...convLocations.map(loc => ({...loc, convention_name: conv.name})));
+                        }
+                    }
+                    renderLocations();
+                }
+            } catch (error) {
+                console.error('Error loading locations:', error);
+                document.getElementById('locations-list').innerHTML = '<p>Error loading locations</p>';
+            }
+        }
+
+        function renderLocations() {
+            const container = document.getElementById('locations-list');
+            if (locations.length === 0) {
+                container.innerHTML = '<p>No locations found. Add one above!</p>';
+                return;
+            }
+
+            container.innerHTML = locations.map(location => `
+                <div class="card">
+                    <h4>${location.name}</h4>
+                    <p><strong>Convention:</strong> ${location.convention_name}</p>
+                    <p>${location.description || 'No description'}</p>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 1rem 0;">
+                        <div><strong>Capacity:</strong> ${location.capacity || 'Not set'}</div>
+                        <div><strong>Address:</strong> ${location.address || 'Not set'}</div>
+                    </div>
+                    <div style="margin-top: 1rem;">
+                        <button class="btn btn-secondary" onclick="editLocation('${location.id}')">Edit</button>
+                        <button class="btn btn-danger" onclick="deleteLocation('${location.id}')">Delete</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        // Location Form Handler
+        document.getElementById('location-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
             
-            // Remove active class from all nav items
-            document.querySelectorAll('.nav-item').forEach(item => {
-                item.classList.remove('active');
-            });
-            
-            // Show selected section
-            document.getElementById(sectionName).classList.remove('hidden');
-            
-            // Add active class to clicked nav item
-            event.target.classList.add('active');
+            const conventionId = document.getElementById('location-convention').value;
+            const formData = {
+                name: document.getElementById('location-name').value,
+                description: document.getElementById('location-description').value,
+                capacity: parseInt(document.getElementById('location-capacity').value) || null,
+                address: document.getElementById('location-address').value
+            };
+
+            try {
+                showLoading('Adding location...');
+                const response = await fetch(`${API_BASE}/conventions/${conventionId}/locations`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    showAlert('Location added successfully!', 'success');
+                    this.reset();
+                    loadLocations();
+                } else {
+                    const error = await response.json();
+                    showAlert(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error adding location:', error);
+                showAlert('Error adding location', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Load dropdown data
+        async function loadConventionsDropdown() {
+            try {
+                const response = await fetch(`${API_BASE}/conventions/`);
+                if (response.ok) {
+                    const conventions = await response.json();
+                    
+                    // Update all convention dropdowns
+                    const dropdowns = ['location-convention', 'slots-convention', 'filter-slots-convention'];
+                    dropdowns.forEach(dropdownId => {
+                        const dropdown = document.getElementById(dropdownId);
+                        if (dropdown) {
+                            dropdown.innerHTML = '<option value="">Select Convention</option>' +
+                                conventions.map(conv => `<option value="${conv.id}">${conv.name}</option>`).join('');
+                        }
+                    });
+                }
+            } catch (error) {
+                console.error('Error loading conventions dropdown:', error);
+            }
+        }
+
+        // Load all necessary data
+        function loadAllData() {
+            loadConventions();
+            loadConventionsDropdown();
         }
 
         // Utility functions
-        function showError(message) {
+        function showAlert(message, type) {
             // Remove existing alerts
-            document.querySelectorAll('.error, .success').forEach(el => el.remove());
+            document.querySelectorAll('.alert').forEach(alert => alert.remove());
             
             const alert = document.createElement('div');
-            alert.className = 'error';
+            alert.className = `alert alert-${type}`;
             alert.textContent = message;
-            document.querySelector('.content').insertBefore(alert, document.querySelector('.content').firstChild);
             
-            setTimeout(() => alert.remove(), 5000);
+            // Insert at the top of the active section
+            const activeSection = document.querySelector('.section.active');
+            activeSection.insertBefore(alert, activeSection.firstChild);
+            
+            // Auto-remove after 5 seconds
+            setTimeout(() => {
+                alert.remove();
+            }, 5000);
         }
 
-        function showSuccess(message) {
-            // Remove existing alerts
-            document.querySelectorAll('.error, .success').forEach(el => el.remove());
-            
-            const alert = document.createElement('div');
-            alert.className = 'success';
-            alert.textContent = message;
-            document.querySelector('.content').insertBefore(alert, document.querySelector('.content').firstChild);
-            
-            setTimeout(() => alert.remove(), 5000);
+        function showLoading(message) {
+            document.getElementById('loading-message').textContent = message;
+            document.getElementById('loading-modal').style.display = 'block';
         }
 
-        // Promote current user to admin
-        async function promoteToAdmin() {
+        function hideLoading() {
+            document.getElementById('loading-modal').style.display = 'none';
+        }
+
+        // Placeholder functions for features to be implemented
+        async function loadEventSlots() {
+            console.log('Loading event slots...');
             try {
-                const response = await fetch(`${API_BASE}/auth/promote-to-admin`, {
+                const response = await fetch(`${API_BASE}/event-slots/`);
+                if (!response.ok) throw new Error('Failed to fetch event slots');
+                
+                const slots = await response.json();
+                
+                // Update stats
+                document.getElementById('stats-event-slots').textContent = slots.length;
+                
+                // Populate slots list (placeholder for now)
+                console.log('Event slots loaded:', slots.length);
+                
+            } catch (error) {
+                console.error('Error loading event slots:', error);
+                document.getElementById('stats-event-slots').textContent = '0';
+            }
+        }
+        async function loadPrerequisites() {
+            console.log('Loading prerequisites...');
+            try {
+                const response = await fetch(`${API_BASE}/prerequisites/`);
+                if (!response.ok) throw new Error('Failed to fetch prerequisites');
+                
+                const prerequisites = await response.json();
+                
+                // Update stats
+                document.getElementById('stats-prerequisites').textContent = prerequisites.length;
+                
+                console.log('Prerequisites loaded:', prerequisites.length);
+                
+            } catch (error) {
+                console.error('Error loading prerequisites:', error);
+                document.getElementById('stats-prerequisites').textContent = '0';
+            }
+        }
+        async function loadEquipment() {
+            console.log('Loading equipment...');
+            try {
+                const response = await fetch(`${API_BASE}/equipment/`);
+                if (!response.ok) throw new Error('Failed to fetch equipment');
+                
+                const equipment = await response.json();
+                
+                // Update stats
+                document.getElementById('stats-equipment').textContent = equipment.length;
+                
+                console.log('Equipment loaded:', equipment.length);
+                
+            } catch (error) {
+                console.error('Error loading equipment:', error);
+                document.getElementById('stats-equipment').textContent = '0';
+            }
+        }
+        async function loadUsers() {
+            console.log('Loading users...');
+            try {
+                const response = await fetch(`${API_BASE}/users/`);
+                if (!response.ok) throw new Error('Failed to fetch users');
+                
+                const users = await response.json();
+                
+                // Update stats
+                document.getElementById('users-total').textContent = users.length;
+                document.getElementById('users-admins').textContent = users.filter(u => u.is_admin).length;
+                document.getElementById('users-hosts').textContent = users.filter(u => u.is_host).length;
+                document.getElementById('users-attendees').textContent = users.filter(u => u.is_attendee).length;
+                document.getElementById('stats-users').textContent = users.length;
+                
+                // Populate users list
+                const usersList = document.getElementById('users-list');
+                usersList.innerHTML = users.map(user => `
+                    <div style="background: white; padding: 1rem; border-radius: 8px; margin-bottom: 1rem; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+                        <div style="display: flex; justify-content: space-between; align-items: center;">
+                            <div style="flex: 1;">
+                                <div style="font-weight: bold;">${user.name}</div>
+                                <div style="color: #666;">${user.email}</div>
+                                <div style="font-size: 0.875rem; color: #888; margin-top: 0.25rem;">
+                                    Roles: ${user.roles.join(', ')}
+                                </div>
+                            </div>
+                            <div style="display: flex; gap: 0.5rem; align-items: center;">
+                                <div style="display: flex; gap: 0.25rem;">
+                                    ${user.is_admin ? '<span style="background: #ef4444; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Admin</span>' : ''}
+                                    ${user.is_host ? '<span style="background: #10b981; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Host</span>' : ''}
+                                    ${user.is_attendee ? '<span style="background: #3b82f6; color: white; padding: 0.25rem 0.5rem; border-radius: 4px; font-size: 0.75rem;">Attendee</span>' : ''}
+                                </div>
+                                <div style="display: flex; gap: 0.25rem; margin-left: 1rem;">
+                                    ${!user.is_admin ? `<button class="btn btn-danger" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="promoteToAdmin('${user.id}')">Add Admin</button>` : ''}
+                                    ${!user.is_host ? `<button class="btn btn-success" style="padding: 0.25rem 0.5rem; font-size: 0.75rem;" onclick="promoteToHost('${user.id}')">Add Host</button>` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `).join('');
+                
+            } catch (error) {
+                console.error('Error loading users:', error);
+                showAlert('Failed to load users: ' + error.message, 'error');
+            }
+        }
+        async function loadSystemStatus() {
+            console.log('Loading system status...');
+            
+            // Check API status
+            try {
+                const apiResponse = await fetch(`${API_BASE}/health`);
+                if (apiResponse.ok) {
+                    document.getElementById('api-status').innerHTML = '<span class="status-indicator status-active"></span> API Online';
+                } else {
+                    document.getElementById('api-status').innerHTML = '<span class="status-indicator status-inactive"></span> API Offline';
+                }
+            } catch (error) {
+                document.getElementById('api-status').innerHTML = '<span class="status-indicator status-inactive"></span> API Error';
+            }
+            
+            // Check Database status (via users endpoint as a proxy)
+            try {
+                const dbResponse = await fetch(`${API_BASE}/users/`);
+                if (dbResponse.ok) {
+                    document.getElementById('db-status').innerHTML = '<span class="status-indicator status-active"></span> Database Connected';
+                } else {
+                    document.getElementById('db-status').innerHTML = '<span class="status-indicator status-inactive"></span> Database Error';
+                }
+            } catch (error) {
+                document.getElementById('db-status').innerHTML = '<span class="status-indicator status-inactive"></span> Database Unreachable';
+            }
+        }
+        async function loadLocationsDropdown() {
+            console.log('Loading locations dropdown...');
+            try {
+                // Locations are part of conventions, so we need to get them from there
+                const response = await fetch(`${API_BASE}/conventions/`);
+                if (!response.ok) throw new Error('Failed to fetch conventions');
+                
+                const conventions = await response.json();
+                const locations = [];
+                
+                // Extract locations from all conventions
+                conventions.forEach(conv => {
+                    if (conv.locations) {
+                        locations.push(...conv.locations);
+                    }
+                });
+                
+                // Populate location dropdowns
+                const dropdowns = document.querySelectorAll('select[name="location_id"], #bulk-locations');
+                dropdowns.forEach(dropdown => {
+                    if (dropdown.id === 'bulk-locations') {
+                        // Multi-select for bulk operations
+                        dropdown.innerHTML = locations.map(loc => 
+                            `<option value="${loc.id}">${loc.name}</option>`
+                        ).join('');
+                    } else {
+                        // Single select dropdowns
+                        dropdown.innerHTML = '<option value="">Select a location...</option>' + 
+                            locations.map(loc => 
+                                `<option value="${loc.id}">${loc.name}</option>`
+                            ).join('');
+                    }
+                });
+                
+                console.log('Location dropdowns populated with', locations.length, 'locations');
+                
+            } catch (error) {
+                console.error('Error loading locations dropdown:', error);
+            }
+        }
+        
+        function editConvention(id) { showAlert('Edit convention feature coming soon!', 'info'); }
+        function deleteConvention(id) { showAlert('Delete convention feature coming soon!', 'info'); }
+        function viewConventionDetails(id) { showAlert('View details feature coming soon!', 'info'); }
+        function editLocation(id) { showAlert('Edit location feature coming soon!', 'info'); }
+        function deleteLocation(id) { showAlert('Delete location feature coming soon!', 'info'); }
+
+        // Time slots management for bulk creation
+        function addTimeSlot() {
+            const container = document.getElementById('time-slots-container');
+            const newRow = document.createElement('div');
+            newRow.className = 'time-slot-row';
+            newRow.style = 'display: grid; grid-template-columns: 1fr 1fr auto; gap: 0.5rem; margin: 0.5rem 0;';
+            newRow.innerHTML = `
+                <input type="time" placeholder="Start Time">
+                <input type="time" placeholder="End Time">
+                <button type="button" class="btn btn-danger" onclick="removeTimeSlot(this)">Remove</button>
+            `;
+            container.appendChild(newRow);
+        }
+
+        function removeTimeSlot(button) {
+            button.parentElement.remove();
+        }
+
+        // Bulk Slots Form Handler
+        document.getElementById('bulk-slots-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const conventionId = document.getElementById('slots-convention').value;
+            const selectedLocations = Array.from(document.getElementById('slots-locations').selectedOptions)
+                .map(option => option.value);
+            const numberOfDays = parseInt(document.getElementById('slots-days').value);
+            
+            // Collect time slots
+            const timeSlots = [];
+            const timeSlotRows = document.querySelectorAll('#time-slots-container .time-slot-row');
+            timeSlotRows.forEach(row => {
+                const startTime = row.querySelector('input[type="time"]:first-child').value;
+                const endTime = row.querySelector('input[type="time"]:last-child').value;
+                if (startTime && endTime) {
+                    timeSlots.push({
+                        start_time: startTime,
+                        end_time: endTime
+                    });
+                }
+            });
+
+            if (timeSlots.length === 0) {
+                showAlert('Please add at least one time slot', 'error');
+                return;
+            }
+
+            const formData = {
+                convention_id: conventionId,
+                location_ids: selectedLocations,
+                time_slots: timeSlots,
+                number_of_days: numberOfDays
+            };
+
+            try {
+                showLoading('Creating bulk slots...');
+                const response = await fetch(`${API_BASE}/conventions/${conventionId}/bulk-slots`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showAlert(`Successfully created ${result.total_slots_created} event slots!`, 'success');
+                    this.reset();
+                } else {
+                    const error = await response.json();
+                    showAlert(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error creating bulk slots:', error);
+                showAlert('Error creating bulk slots', 'error');
+            } finally {
+                hideLoading();
+            }
+        });
+
+        // Handle convention change for locations dropdown
+        document.getElementById('slots-convention').addEventListener('change', async function() {
+            const conventionId = this.value;
+            const locationsSelect = document.getElementById('slots-locations');
+            
+            if (!conventionId) {
+                locationsSelect.innerHTML = '';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/conventions/${conventionId}/locations`);
+                if (response.ok) {
+                    const locations = await response.json();
+                    locationsSelect.innerHTML = locations.map(loc => 
+                        `<option value="${loc.id}">${loc.name}</option>`
+                    ).join('');
+                }
+            } catch (error) {
+                console.error('Error loading locations for convention:', error);
+            }
+        });
+
+        // Role Management Functions
+        async function promoteToAdmin(userId) {
+            if (!confirm('Are you sure you want to promote this user to admin?')) {
+                return;
+            }
+
+            try {
+                showLoading('Promoting user to admin...');
+                const response = await fetch(`${API_BASE}/users/${userId}/promote-admin`, {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',
@@ -579,19 +1316,48 @@
 
                 if (response.ok) {
                     const result = await response.json();
-                    showSuccess('Promoted to admin successfully! Refreshing page...');
-                    
-                    // Refresh the page after a short delay
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 2000);
+                    showAlert(result.message, 'success');
+                    loadUsers(); // Reload users list to reflect changes
                 } else {
-                    const error = await response.text();
-                    showError(`Failed to promote to admin: ${error}`);
+                    const error = await response.json();
+                    showAlert(`Error: ${error.detail}`, 'error');
                 }
             } catch (error) {
-                console.error('Error promoting to admin:', error);
-                showError('Failed to promote to admin');
+                console.error('Error promoting user to admin:', error);
+                showAlert('Error promoting user to admin', 'error');
+            } finally {
+                hideLoading();
+            }
+        }
+
+        async function promoteToHost(userId) {
+            if (!confirm('Are you sure you want to promote this user to host?')) {
+                return;
+            }
+
+            try {
+                showLoading('Promoting user to host...');
+                const response = await fetch(`${API_BASE}/users/${userId}/promote-host`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    credentials: 'include'
+                });
+
+                if (response.ok) {
+                    const result = await response.json();
+                    showAlert(result.message, 'success');
+                    loadUsers(); // Reload users list to reflect changes
+                } else {
+                    const error = await response.json();
+                    showAlert(`Error: ${error.detail}`, 'error');
+                }
+            } catch (error) {
+                console.error('Error promoting user to host:', error);
+                showAlert('Error promoting user to host', 'error');
+            } finally {
+                hideLoading();
             }
         }
     </script>

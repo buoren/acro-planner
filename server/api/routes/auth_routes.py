@@ -94,8 +94,10 @@ async def password_login(request: Request):
                 value=access_token,
                 httponly=True,
                 secure=True,  # HTTPS only
-                samesite="none",  # Allow cross-site cookies
-                max_age=24 * 60 * 60  # 24 hours
+                samesite="lax",  # Changed from "none" to "lax" for better compatibility
+                max_age=24 * 60 * 60,  # 24 hours
+                path="/",  # Explicitly set path
+                domain=None  # Let browser determine domain automatically
             )
             
             return response
@@ -116,8 +118,13 @@ async def auth_callback(request: Request):
 
 
 @router.get("/logout")
-async def logout(request: Request):
-    """Logout user"""
+async def logout_get(request: Request):
+    """Logout user via GET"""
+    return logout_user(request)
+
+@router.post("/logout")
+async def logout_post(request: Request):
+    """Logout user via POST"""
     return logout_user(request)
 
 

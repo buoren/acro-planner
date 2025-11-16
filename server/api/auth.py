@@ -9,7 +9,7 @@ from auth_manager import require_auth as jwt_require_auth, require_admin as jwt_
 from utils.roles import is_admin, is_host_or_admin, get_user_with_roles
 
 
-def get_current_user_with_roles(
+async def get_current_user_with_roles(
     request: Request,
     db: Session = Depends(get_db)
 ) -> dict:
@@ -23,10 +23,26 @@ def get_current_user_with_roles(
         HTTPException: If user is not authenticated
     """
     # Use the JWT auth manager which already handles user lookup with roles
-    return jwt_require_auth(request)
+    return await jwt_require_auth(request)
 
 
-def require_auth(
+async def get_current_user(
+    request: Request,
+    db: Session = Depends(get_db)
+) -> dict:
+    """
+    Get current authenticated user (alias for consistency).
+    
+    Returns:
+        User dictionary with role information
+        
+    Raises:
+        HTTPException: If user is not authenticated
+    """
+    return await jwt_require_auth(request)
+
+
+async def require_auth(
     request: Request,
     db: Session = Depends(get_db)
 ) -> dict:
@@ -39,10 +55,10 @@ def require_auth(
     Raises:
         HTTPException: If user is not authenticated
     """
-    return jwt_require_auth(request)
+    return await jwt_require_auth(request)
 
 
-def require_admin(
+async def require_admin(
     request: Request,
     db: Session = Depends(get_db)
 ) -> dict:
@@ -55,10 +71,10 @@ def require_admin(
     Raises:
         HTTPException: If user is not admin
     """
-    return jwt_require_admin(request)
+    return await jwt_require_admin(request)
 
 
-def require_host_or_admin(
+async def require_host_or_admin(
     request: Request,
     db: Session = Depends(get_db)
 ) -> dict:
@@ -71,10 +87,10 @@ def require_host_or_admin(
     Raises:
         HTTPException: If user is not host or admin
     """
-    return jwt_require_host_or_admin(request)
+    return await jwt_require_host_or_admin(request)
 
 
-def require_attendee(
+async def require_attendee(
     request: Request,
     db: Session = Depends(get_db)
 ) -> dict:
@@ -91,7 +107,7 @@ def require_attendee(
     Raises:
         HTTPException: If user is not attendee
     """
-    user = jwt_require_auth(request)
+    user = await jwt_require_auth(request)
     if not user.get('is_attendee', False):
         raise HTTPException(
             status_code=403,
@@ -100,7 +116,7 @@ def require_attendee(
     return user
 
 
-def optional_auth(
+async def optional_auth(
     request: Request,
     db: Session = Depends(get_db)
 ) -> dict | None:
@@ -110,7 +126,7 @@ def optional_auth(
     Returns:
         User dictionary with role information if authenticated, None otherwise
     """
-    return jwt_optional_auth(request)
+    return await jwt_optional_auth(request)
 
 
 def require_self_or_admin(user_id: str):
@@ -124,11 +140,11 @@ def require_self_or_admin(user_id: str):
     Returns:
         Dependency function
     """
-    def _require_self_or_admin(
+    async def _require_self_or_admin(
         request: Request,
         db: Session = Depends(get_db)
     ) -> dict:
-        user = jwt_require_auth(request)
+        user = await jwt_require_auth(request)
         if user['id'] != user_id and not user.get('is_admin', False):
             raise HTTPException(
                 status_code=403,

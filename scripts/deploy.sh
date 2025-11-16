@@ -67,12 +67,58 @@ CLOUD_SQL_CONNECTION=$(terraform output -raw cloud_sql_connection_name 2>/dev/nu
 # Get database password from secret manager
 DATABASE_PASSWORD=$(gcloud secrets versions access latest --secret="acro-planner-mysql-password" 2>/dev/null || echo "")
 
+# Get OAuth secret key from secret manager
+SECRET_KEY=$(gcloud secrets versions access latest --secret="oauth-secret-key" 2>/dev/null || echo "")
+export SECRET_KEY
+
 if [ -z "$REGISTRY_URL" ]; then
     echo -e "${RED}Error: Could not get Terraform outputs. Run 'terraform apply' first.${NC}"
     exit 1
 fi
 
 cd ..
+
+# Build React Native App for Web
+echo -e "${GREEN}📱 Building React Native app for web...${NC}"
+if [ -d "clients/acro-planner-mobile" ]; then
+    cd clients/acro-planner-mobile
+    
+    # Check if node_modules exists, if not install dependencies
+    if [ ! -d "node_modules" ]; then
+        echo -e "${YELLOW}Installing React Native dependencies...${NC}"
+        npm install
+    fi
+    
+    # Build for web
+    echo -e "${YELLOW}Building React Native web bundle...${NC}"
+    npx expo export --platform web --output-dir ../../server/static/app
+    
+    # Fix paths in the generated HTML to include /app prefix
+    echo -e "${YELLOW}Fixing asset paths for /app route...${NC}"
+    cd ../../server/static/app
+    
+    # Show original content for debugging
+    echo -e "${YELLOW}Original paths in index.html:${NC}"
+    grep -E "(script|href=)" index.html || echo "No script/href tags found"
+    
+    # Fix favicon path
+    sed -i.bak 's|href="/favicon.ico"|href="/app/favicon.ico"|g' index.html
+    
+    # Fix JavaScript bundle path
+    sed -i.bak 's|src="/_expo/|src="/app/_expo/|g' index.html
+    
+    # Show fixed content for debugging
+    echo -e "${YELLOW}Fixed paths in index.html:${NC}"
+    grep -E "(script|href=)" index.html || echo "No script/href tags found"
+    
+    # Clean up backup file
+    rm -f index.html.bak
+    
+    cd ../../..
+    echo -e "${GREEN}✅ React Native app built successfully${NC}"
+else
+    echo -e "${YELLOW}⚠️  React Native app directory not found, skipping app build${NC}"
+fi
 
 # Configure Docker for Artifact Registry
 echo -e "${YELLOW}Configuring Docker authentication...${NC}"

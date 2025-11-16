@@ -52,6 +52,10 @@ htmlcov/
 *.log
 logs/
 
+# React Native / Expo
+clients/acro-planner-mobile/.expo/
+server/static/app/
+
 # Abandoned SvelteKit admin files - we use static admin.html instead
 admin/src/routes/auth/
 admin/src/routes/login/

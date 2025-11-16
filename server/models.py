@@ -65,7 +65,11 @@ class Equipment(Base):
     name = Column(String(200), nullable=False)
     description = Column(String(1000))
     media = Column(JSON)
+    location_id = Column(String(36), ForeignKey("locations.id"), nullable=True)
+    quantity = Column(Integer, default=1)
     convention_id = Column(String(36), ForeignKey("conventions.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Locations(Base):
@@ -74,9 +78,14 @@ class Locations(Base):
 
     id = Column(String(36), primary_key=True)
     name = Column(String(200), nullable=False)
+    description = Column(Text)
+    capacity = Column(Integer)
+    address = Column(String(500))
     details = Column(JSON)
     equipment_ids = Column(JSON)
     convention_id = Column(String(36), ForeignKey("conventions.id"), nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Capabilities(Base):
@@ -86,11 +95,14 @@ class Capabilities(Base):
     id = Column(String(36), primary_key=True)
     name = Column(String(200), nullable=False)
     description = Column(String(1000))
+    parent_capability_ids = Column(JSON)  # For prerequisite chaining
     media = Column(JSON)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Events(Base):
-    """Events model for acrobatics classes/sessions."""
+    """Events model for acrobatics classes/sessions (workshops)."""
     __tablename__ = "events"
 
     id = Column(String(36), primary_key=True)
@@ -98,6 +110,8 @@ class Events(Base):
     name = Column(String(200), nullable=False)
     description = Column(String(1000))
     prerequisite_ids = Column(JSON)
+    equipment_ids = Column(JSON)
+    max_students = Column(Integer, default=20)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
@@ -107,11 +121,14 @@ class EventSlot(Base):
     __tablename__ = "event_slots"
 
     id = Column(String(36), primary_key=True)
+    convention_id = Column(String(36), ForeignKey("conventions.id"), nullable=False)
     location_id = Column(String(36), ForeignKey("locations.id"), nullable=False)
     start_time = Column(DateTime, nullable=False)
     end_time = Column(DateTime, nullable=False)
     event_id = Column(String(36), ForeignKey("events.id"), nullable=True)
     day_number = Column(Integer, nullable=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 class Conventions(Base):
@@ -148,8 +165,11 @@ class Hosts(Base):
     id = Column(String(36), primary_key=True)
     attendee_id = Column(String(36), ForeignKey("attendees.id"), nullable=False)
     user_id = Column(String(36), ForeignKey("users.id"), nullable=False)
+    available_slot_ids = Column(JSON)  # Available event slots
     photos = Column(JSON)
     links = Column(JSON)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 class HostEvents(Base):
     """Host events join table for acrobatics classes/sessions."""
@@ -177,7 +197,11 @@ class Selections(Base):
     id = Column(String(36), primary_key=True)
     attendee_id = Column(String(36), ForeignKey("attendees.id"), nullable=False)
     event_id = Column(String(36), ForeignKey("events.id"), nullable=False)
+    event_slot_id = Column(String(36), ForeignKey("event_slots.id"), nullable=True)
+    commitment_level = Column(String(20), default="interested")  # interested, maybe, committed
     is_selected = Column(Boolean, default=False)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 
 
 # Example of how to use the models in your FastAPI app:

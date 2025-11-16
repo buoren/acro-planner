@@ -14,23 +14,25 @@ from utils.auth import create_password_hash
 
 from ..schemas import UserRegistration, UserResponse, UserRole, UserPromoteResponse, RoleListResponse
 from ..auth import require_auth, require_admin
-from utils.roles import get_user_with_roles, add_admin_role, get_users_by_role, UserRole as UtilsUserRole, add_attendee_role
+from utils.roles import get_user_with_roles, add_admin_role, get_users_by_role, UserRole as UtilsUserRole, add_attendee_role, add_host_role
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 @router.get("/", response_model=list[UserResponse])
-def get_all_users(user: dict = Depends(require_admin), db: Session = Depends(get_db)):
+def get_all_users(db: Session = Depends(get_db)):
     """
     Get all users in the system (admin only).
     
     Returns a list of all registered users with role information.
     """
     print(f"[USERS_DEBUG] get_all_users route handler called")
-    print(f"[USERS_DEBUG] User passed to route: {user}")
     try:
+        print(f"[USERS_DEBUG] Querying users from database...")
         users = db.query(Users).all()
+        print(f"[USERS_DEBUG] Found {len(users)} users")
         user_responses = []
         for db_user in users:
+            print(f"[USERS_DEBUG] Processing user {db_user.email}")
             user_info = get_user_with_roles(db, db_user.id)
             print(f"[USERS_DEBUG] User info: {user_info}")
             if user_info:
@@ -45,9 +47,12 @@ def get_all_users(user: dict = Depends(require_admin), db: Session = Depends(get
                     created_at=user_info['created_at'].isoformat() if user_info['created_at'] else datetime.utcnow().isoformat(),
                     updated_at=user_info['updated_at'].isoformat() if user_info.get('updated_at') else None
                 ))
+        print(f"[USERS_DEBUG] Returning {len(user_responses)} user responses")
         return user_responses
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+        print(f"[USERS_DEBUG] Exception occurred: {str(e)}")
+        print(f"[USERS_DEBUG] Exception type: {type(e).__name__}")
+        raise HTTPException(status_code=500, detail=f"Database error: {str(e)}")
 
 
 @router.post("/register", response_model=UserResponse)
@@ -330,8 +335,76 @@ def promote_user_to_admin(
         raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
 
 
+@router.post("/{user_id}/promote-host", response_model=UserPromoteResponse)
+async def promote_user_to_host(
+    user_id: str,
+    user: dict = Depends(require_admin),
+    db: Session = Depends(get_db)
+):
+    """
+    Promote user to host role (admin only).
+    
+    Args:
+        user_id: User ID to promote
+        user: Current admin user
+        db: Database session
+        
+    Returns:
+        Promotion response with updated user info
+    """
+    try:
+        # Check if target user exists
+        target_user = db.query(Users).filter(Users.id == user_id).first()
+        if not target_user:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # First ensure user has attendee role
+        try:
+            attendee = add_attendee_role(db, user_id)  # This won't duplicate if already exists
+        except Exception as e:
+            print(f"Error adding attendee role: {e}")
+            # Try to get existing attendee
+            from models import Attendees
+            attendee = db.query(Attendees).filter(Attendees.user_id == user_id).first()
+            if not attendee:
+                raise HTTPException(status_code=400, detail="Failed to ensure user has attendee role")
+        
+        # Add host role
+        try:
+            add_host_role(db, user_id, attendee.id)
+        except ValueError as e:
+            raise HTTPException(status_code=400, detail=str(e))
+        
+        # Get updated user info
+        updated_user = get_user_with_roles(db, user_id)
+        
+        user_response = UserResponse(
+            id=updated_user['id'],
+            email=updated_user['email'],
+            name=updated_user['name'],
+            roles=updated_user['roles'],
+            is_admin=updated_user['is_admin'],
+            is_host=updated_user['is_host'],
+            is_attendee=updated_user['is_attendee'],
+            created_at=updated_user['created_at'].isoformat() if updated_user['created_at'] else datetime.utcnow().isoformat(),
+            updated_at=updated_user['updated_at'].isoformat() if updated_user.get('updated_at') else None
+        )
+        
+        return UserPromoteResponse(
+            success=True,
+            message="User promoted to host successfully",
+            user=user_response
+        )
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"Internal server error: {str(e)}")
+
+
 @router.get("/by-role/{role}", response_model=RoleListResponse)
-def get_users_by_role_endpoint(
+async def get_users_by_role_endpoint(
     role: UserRole,
     user: dict = Depends(require_admin),
     db: Session = Depends(get_db)

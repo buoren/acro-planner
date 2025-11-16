@@ -1,7 +1,7 @@
 # Claude Context - Acro Planner Project
 
 ## Project Overview
-Complete Acro Planner application with FastAPI backend deployed to Google Cloud, Flutter mobile/web app deployed to GCS, and admin interface served from backend.
+Complete Acro Planner application with FastAPI backend deployed to Google Cloud, React Native mobile/web app, and admin interface served from backend.
 
 ## 🚀 CURRENT STATUS: FULLY DEPLOYED AND OPERATIONAL
 
@@ -9,16 +9,16 @@ Complete Acro Planner application with FastAPI backend deployed to Google Cloud,
 - **Production API**: https://acro-planner-backend-733697808355.us-central1.run.app
 - **Health Check**: https://acro-planner-backend-733697808355.us-central1.run.app/health
 - **Admin Interface**: https://acro-planner-backend-733697808355.us-central1.run.app/admin (OAuth-protected)
-- **Flutter Web App**: https://storage.googleapis.com/acro-planner-flutter-app-733697808355/release_20251105_210028/index.html
+- **React Native App**: Local development only (no production deployment)
 
 ## 🌐 USER ACCESS GUIDE
 
-### For Regular Users (Flutter App Access)
-**Primary URL**: https://storage.googleapis.com/acro-planner-flutter-app-733697808355/release_20251105_210028/index.html
-- Main user interface for acrobatics session planning
-- Material Design 3 responsive interface
-- Works on mobile, tablet, and desktop browsers
-- Supports both light and dark themes
+### For Regular Users (React Native App Access)
+**Development**: Local development environment only
+- React Native mobile app with Expo SDK 54
+- Cross-platform support for iOS, Android, and web
+- Modern UI with native components
+- OAuth and password authentication
 - Real-time API connectivity status
 
 ### For Admin Users (Administrative Access)
@@ -58,12 +58,9 @@ Complete Acro Planner application with FastAPI backend deployed to Google Cloud,
    - Updates OAuth environment variables
    - NOT terraform (terraform is only for infrastructure)
 
-2. **Frontend Deployment**: `./scripts/deploy-frontend.sh`
-   - Builds Flutter web app with timestamped subdirectory base href
-   - Deploys to Google Cloud Storage bucket with cache-busting subdirectories
-   - Configures public access for static hosting
-   - **NEVER manually run flutter build + gsutil - ALWAYS use this script**
-   - **SUBDIRECTORY APPROACH MANDATORY** - ensures proper resource loading
+2. **React Native Development**: Local development only
+   - No production deployment for React Native app
+   - Run locally with `npm run web` or `npx expo start`
 
 ### Testing Protocol
 - **ALWAYS test fixes against production endpoints** after deployment
@@ -77,10 +74,9 @@ Complete Acro Planner application with FastAPI backend deployed to Google Cloud,
 # Backend deployment (from project root)
 ./scripts/deploy.sh
 
-# Flutter web app deployment (from project root)
-./scripts/deploy-frontend.sh
-
-# Both can be run independently as needed
+# React Native development (local only)
+cd clients/acro-planner-mobile
+npm run web  # or npx expo start
 ```
 
 ## Project Structure (Complete)
@@ -100,17 +96,16 @@ acro-planner/
 │   ├── variables.tf         # Input variables
 │   └── outputs.tf           # Infrastructure outputs
 ├── clients/                  # Frontend applications
-│   └── acro_planner_app/    # Flutter mobile/web app (WORKING)
-│       ├── lib/
-│       │   ├── main.dart    # Material Design 3 app
-│       │   └── services/
-│       │       └── api_service.dart  # Production API client
-│       ├── .env             # Production API configuration
-│       └── pubspec.yaml     # Flutter dependencies
+│   └── acro-planner-mobile/   # React Native app (Expo SDK 54)
+│       ├── src/
+│       │   ├── screens/      # App screens with navigation
+│       │   ├── services/     # API integration
+│       │   └── navigation/   # React Navigation setup
+│       ├── app.json          # Expo configuration
+│       └── package.json      # Node dependencies
 ├── .env.oauth                # OAuth credentials for backend authentication
 ├── scripts/                  # Deployment scripts
 │   ├── deploy.sh            # Backend deployment to Cloud Run
-│   ├── deploy-frontend.sh   # Flutter web deployment to GCS
 │   └── set-env-vars.sh      # OAuth environment setup
 └── CLAUDE.md                # This context file
 ```
@@ -121,7 +116,6 @@ acro-planner/
 - **Cloud Run Service**: acro-planner-backend (us-central1)
 - **Cloud SQL**: MySQL 8.0 instance with automated backups
 - **Artifact Registry**: Docker container registry for backend images
-- **Cloud Storage Bucket**: acro-planner-flutter-app-733697808355 (static web hosting)
 - **Secret Manager**: Database password management
 - **IAM**: Service accounts with least privilege access
 
@@ -174,16 +168,16 @@ app.add_middleware(
 - `POST /api/users` - Create new user
 - `GET /api/users` - List all users (paginated)
 
-## 📱 Flutter Client (DEPLOYED)
+## 📱 React Native Client (Local Development)
 
 ### Features
-- ✅ Material Design 3 with light/dark theme
+- ✅ React Native with Expo SDK 54
 - ✅ Real-time API health checking
-- ✅ Provider state management pattern
+- ✅ OAuth and password authentication
 - ✅ HTTP client configured for production API
 - ✅ Environment-based configuration
-- ✅ Cross-platform (mobile, web, desktop)
-- ✅ Web version deployed to Google Cloud Storage
+- ✅ Cross-platform (iOS, Android, web)
+- ✅ Local development environment
 
 ### Configuration (.env)
 ```
@@ -193,14 +187,14 @@ ENVIRONMENT=production
 ```
 
 ### Access Methods
-- **Web (Production)**: https://storage.googleapis.com/acro-planner-flutter-app-733697808355/index.html
-- **Local Development**:
+- **Local Development Only**:
   ```bash
-  cd clients/acro_planner_app
-  flutter pub get
-  flutter run -d chrome    # For web
-  flutter run -d ios       # For iOS
-  flutter run -d android   # For Android
+  cd clients/acro-planner-mobile
+  npm install
+  npm run web              # For web browser
+  npx expo start          # Choose platform
+  npm run ios             # For iOS simulator
+  npm run android         # For Android emulator
   ```
 
 ## 🖥️ Admin Interface
@@ -223,23 +217,21 @@ ENVIRONMENT=production
 ### CORS Configuration
 - ✅ Added CORS middleware to FastAPI backend
 - ✅ Allows cross-origin requests from web clients
-- ✅ Properly configured for Flutter web app
+- ✅ Properly configured for React Native app
 
 ### Environment Configuration
 - **Development**: Local servers with hot reload
 - **Production**: All services deployed to Google Cloud
 - **Database**: Cloud SQL MySQL with automated backups
-- **Storage**: GCS bucket for Flutter web static hosting
 
 ## 🎯 Current Capabilities
 
 ### What's Working Right Now
 1. **Backend API**: Fully deployed and responding with OAuth authentication
 2. **Health Monitoring**: All clients show real-time connection status
-3. **Flutter Web App**: Deployed to GCS with Material Design 3 UI
+3. **React Native App**: Local development with Expo SDK 54
 4. **Admin Dashboard**: OAuth-protected interface served from backend
 5. **Infrastructure**: Production-ready Google Cloud setup
-6. **Static Hosting**: GCS bucket serving Flutter web app
 7. **CORS**: Cross-origin requests working for all web clients
 
 ### Ready for Development
@@ -258,16 +250,13 @@ ENVIRONMENT=production
 ./scripts/deploy.sh
 ```
 
-### Flutter Frontend Deployment
+### React Native Development
 ```bash
-# Deploy Flutter frontend using deployment script
-./scripts/deploy-frontend.sh
-
-# Follow the script's instructions to update backend environment variable
+# Run React Native app locally
+cd clients/acro-planner-mobile
+npm run web  # For web browser
+npx expo start  # Choose platform interactively
 ```
-
-**⚠️ Critical Flutter Deployment Note**: 
-The `deploy-frontend.sh` script automatically handles the correct `--base-href` flag required when deploying to subdirectories. Without this flag, Flutter apps will get 404 errors on assets when deployed to Google Cloud Storage subdirectories.
 
 ### Local Development
 ```bash
@@ -275,9 +264,9 @@ The `deploy-frontend.sh` script automatically handles the correct `--base-href` 
 cd server
 poetry run uvicorn main:app --reload --host 0.0.0.0 --port 8000
 
-# Flutter App
-cd clients/acro_planner_app
-flutter run -d chrome
+# React Native App
+cd clients/acro-planner-mobile
+npm run web
 
 # Admin Interface (SvelteKit development version)
 cd admin
@@ -289,7 +278,7 @@ npm run dev
 ### What We've Built Together
 1. **Complete FastAPI Backend** - Production deployed with CORS
 2. **Full Infrastructure** - Terraform-managed Google Cloud setup
-3. **Flutter Mobile App** - Cross-platform with Material Design 3
+3. **React Native App** - Cross-platform with Expo SDK 54
 4. **SvelteKit Admin** - TypeScript admin interface
 5. **API Integration** - All frontends connected to production backend
 6. **Health Monitoring** - Real-time connection status across all apps
@@ -302,7 +291,7 @@ npm run dev
 - ✅ Google Cloud Run + Cloud SQL
 - ✅ Docker + Artifact Registry
 - ✅ Terraform Infrastructure as Code
-- ✅ Flutter with Provider state management
+- ✅ React Native with Expo framework
 - ✅ SvelteKit with TypeScript
 - ✅ CORS middleware for web compatibility
 
@@ -310,14 +299,14 @@ npm run dev
 1. Add authentication (JWT tokens)
 2. Create data models for acrobatics sessions
 3. Implement user management in admin interface
-4. Build session planning features in Flutter app
+4. Build session planning features in React Native app
 5. Add analytics and reporting dashboards
 6. Set up GitHub Actions for CI/CD
 
 ## 📝 Important Notes
 - **All APIs working**: CORS properly configured for web clients
 - **Production Ready**: Infrastructure deployed and operational
-- **Multi-Platform**: Flutter supports mobile, web, and desktop
+- **Multi-Platform**: React Native supports iOS, Android, and web
 - **Admin Ready**: SvelteKit admin interface for management
 - **Type Safe**: Full TypeScript support in admin interface
 - **Scalable**: Cloud Run auto-scales based on demand
@@ -328,3 +317,10 @@ npm run dev
 - **CORS Issues**: Already resolved with FastAPI middleware
 - **API Connection**: Check health endpoint first: `/health`
 - **Docker Platform**: Use `--platform linux/amd64` for Cloud Run compatibility
+
+# Important Instructions
+Do what has been asked; nothing more, nothing less.
+NEVER create files unless they're absolutely necessary for achieving your goal.
+ALWAYS prefer editing an existing file to creating a new one.
+NEVER proactively create documentation files (*.md) or README files. Only create documentation files if explicitly requested by the User.
+NEVER implement frontend stubs or placeholder functions unless explicitly told to do so.

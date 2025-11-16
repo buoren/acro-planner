@@ -13,10 +13,9 @@ router = APIRouter(tags=["core"])
 
 
 @router.get("/")
-async def root(db: Session = Depends(get_db)):
-    """Root endpoint - redirect to frontend index.html from database storage"""
-    frontend_url = get_frontend_url(db)
-    return RedirectResponse(url=frontend_url, status_code=302)
+async def root():
+    """Root endpoint - redirect to /app for React Native app"""
+    return RedirectResponse(url="/app", status_code=302)
 
 
 @router.get("/health")

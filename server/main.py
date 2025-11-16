@@ -13,6 +13,13 @@ from api.routes.users import router as users_router
 from api.routes.core import router as core_router
 from api.routes.auth_routes import router as auth_routes_router
 from api.routes.admin import router as admin_router
+from api.routes.app import router as app_router
+from api.routes.conventions import router as conventions_router
+from api.routes.prerequisites import router as prerequisites_router
+from api.routes.equipment import router as equipment_router
+from api.routes.workshops import router as workshops_router
+from api.routes.attendees import router as attendees_router
+from api.routes.event_slots import router as event_slots_router
 from oauth import (
     init_oauth_middleware,
     is_oauth_configured,
@@ -111,8 +118,8 @@ async def add_security_headers(request: Request, call_next):
     response.headers["X-XSS-Protection"] = "1; mode=block"
     response.headers["Referrer-Policy"] = "strict-origin-when-cross-origin"
     
-    # Content Security Policy (restrictive for API, but skip for admin/auth routes that set their own CSP)
-    if not any(request.url.path.startswith(path) for path in ['/admin', '/auth', '/', '/access-denied']):
+    # Content Security Policy (restrictive for API, but skip for admin/auth/app routes that set their own CSP)
+    if not any(request.url.path.startswith(path) for path in ['/admin', '/auth', '/app', '/', '/access-denied']):
         response.headers["Content-Security-Policy"] = "default-src 'none'; frame-ancestors 'none';"
     
     # HTTPS-only headers for production
@@ -229,3 +236,10 @@ app.include_router(core_router)
 app.include_router(users_router)
 app.include_router(auth_routes_router)
 app.include_router(admin_router)
+app.include_router(app_router)
+app.include_router(conventions_router)
+app.include_router(prerequisites_router)
+app.include_router(equipment_router)
+app.include_router(workshops_router)
+app.include_router(attendees_router)
+app.include_router(event_slots_router)

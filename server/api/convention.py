@@ -95,9 +95,11 @@ class ConventionManager:
                 for location in locations:
                     slot = EventSlot(
                         id=str(ulid.new()),
+                        convention_id=convention_id,
                         location_id=location.id,
                         start_time=time_slot[0],
                         end_time=time_slot[1],
+                        event_id=None,
                         day_number=day_number
                     )
                     self.db.add(slot)

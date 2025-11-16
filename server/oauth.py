@@ -76,9 +76,17 @@ async def require_auth(request: Request) -> dict:
         # Check if this is coming from the admin interface
         is_admin_request = request.url.path.startswith('/admin')
         
-        # Redirect to OAuth login with admin flag if needed
+        # Check if this is coming from the React Native app
+        is_app_request = request.url.path.startswith('/app')
+        referer = request.headers.get('referer', '')
+        from_react_native_app = '/app' in referer
+        
+        # Redirect to OAuth login with appropriate context
         if is_admin_request:
             auth_url = f"{BASE_URL}/auth/login?admin=true"
+        elif is_app_request or from_react_native_app:
+            # Include return_url to ensure we come back to the React Native app
+            auth_url = f"{BASE_URL}/auth/login?return_url={BASE_URL}/app"
         else:
             auth_url = f"{BASE_URL}/auth/login"
             
@@ -101,9 +109,13 @@ async def oauth_login(request: Request):
         # Initialize empty session if it doesn't exist
         request.session = {}
 
-    # Store the return URL from query parameter or default to Flutter app
+    # Store the return URL from query parameter or determine from context
     return_url = request.query_params.get('return_url')
     admin_flag = request.query_params.get('admin')
+    
+    # Check if the request came from the React Native app by looking at the Referer header
+    referer = request.headers.get('referer', '')
+    from_react_native_app = '/app' in referer
     
     if admin_flag == 'true':
         # Explicitly requested admin page
@@ -116,7 +128,29 @@ async def oauth_login(request: Request):
             request.session['oauth_return_url'] = return_url
             logger.info(f"Storing return URL from query param: {return_url}")
         else:
-            # Invalid return URL, get current frontend URL from database
+            # Invalid return URL, determine based on context
+            if from_react_native_app:
+                request.session['oauth_return_url'] = f"{BASE_URL}/app"
+                logger.info(f"Invalid return URL provided but came from React Native app, redirecting to /app")
+            else:
+                # Get current frontend URL from database
+                db_gen = get_db()
+                db: Session = next(db_gen)
+                try:
+                    from utils.system_settings import get_frontend_url
+                    default_frontend_url = get_frontend_url(db)
+                finally:
+                    db.close()
+                
+                request.session['oauth_return_url'] = default_frontend_url
+                logger.warning(f"Invalid return URL provided: {return_url}, defaulting to Flutter app from database: {default_frontend_url}")
+    else:
+        # No return URL provided, determine based on context
+        if from_react_native_app:
+            request.session['oauth_return_url'] = f"{BASE_URL}/app"
+            logger.info(f"No return URL provided but came from React Native app, redirecting to /app")
+        else:
+            # Get current frontend URL from database
             db_gen = get_db()
             db: Session = next(db_gen)
             try:
@@ -124,21 +158,9 @@ async def oauth_login(request: Request):
                 default_frontend_url = get_frontend_url(db)
             finally:
                 db.close()
-            
+                
             request.session['oauth_return_url'] = default_frontend_url
-            logger.warning(f"Invalid return URL provided: {return_url}, defaulting to Flutter app from database: {default_frontend_url}")
-    else:
-        # No return URL provided, get current frontend URL from database
-        db_gen = get_db()
-        db: Session = next(db_gen)
-        try:
-            from utils.system_settings import get_frontend_url
-            default_frontend_url = get_frontend_url(db)
-        finally:
-            db.close()
-            
-        request.session['oauth_return_url'] = default_frontend_url
-        logger.info(f"No return URL provided, defaulting to Flutter app from database: {default_frontend_url}")
+            logger.info(f"No return URL provided, defaulting to Flutter app from database: {default_frontend_url}")
 
     redirect_uri = f"{BASE_URL}/auth/callback"
 
@@ -192,6 +214,17 @@ async def oauth_callback(request: Request):
                 db.commit()
                 logger.info(f"Created new user in database: {user_info['email']} with ID: {new_user_id}")
                 user_id = new_user_id
+                
+                # Check if this is the first user - if so, make them an admin
+                user_count = db.query(Users).count()
+                if user_count == 1:
+                    from utils.roles import add_admin_role
+                    try:
+                        add_admin_role(db, user_id)
+                        logger.info(f"First user {user_info['email']} promoted to admin automatically")
+                    except Exception as e:
+                        logger.warning(f"Failed to auto-promote first user to admin: {e}")
+                        # Don't fail the login if admin promotion fails
             else:
                 user_id = existing_user.id
                 logger.info(f"Found existing user: {user_info['email']} with ID: {user_id}")
@@ -200,12 +233,31 @@ async def oauth_callback(request: Request):
             access_token = create_access_token(user_id)
             
             logger.info(f"JWT token created for user: {user_id}")
+            logger.info(f"JWT token length: {len(access_token)}")
+            logger.info(f"JWT token first 50 chars: {access_token[:50]}...")
+            logger.info(f"Cookie name: {manager.cookie_name}")
+            
+            # Test JWT token validation
+            try:
+                import jwt
+                from auth_manager import JWT_SECRET
+                decoded = jwt.decode(access_token, JWT_SECRET, algorithms=["HS256"])
+                logger.info(f"JWT token validation test: SUCCESS - {decoded}")
+            except Exception as jwt_e:
+                logger.error(f"JWT token validation test: FAILED - {jwt_e}")
 
         finally:
             db.close()
 
         # Get the stored return URL or default to admin
         return_url = request.session.get('oauth_return_url', f"{BASE_URL}/admin") if hasattr(request, 'session') else f"{BASE_URL}/admin"
+        
+        # If return URL is absolute and points to our domain, convert to relative path
+        if return_url.startswith(BASE_URL):
+            return_url = return_url.replace(BASE_URL, "")
+            if not return_url:
+                return_url = "/admin"
+        
         logger.info(f"Redirecting user to: {return_url}")
         
         # Clear the return URL from session if it exists
@@ -222,15 +274,30 @@ async def oauth_callback(request: Request):
         response = RedirectResponse(url=return_url)
         
         # Set JWT token as HTTP-only cookie
-        response.set_cookie(
-            key=manager.cookie_name,
-            value=access_token,
-            httponly=True,
-            secure=True,  # HTTPS only
-            samesite="none",  # Allow cross-site cookies
-            max_age=24 * 60 * 60  # 24 hours
-        )
+        cookie_name = manager.cookie_name
+        cookie_settings = {
+            "key": cookie_name,
+            "value": access_token,
+            "httponly": True,
+            "secure": True,
+            "samesite": "lax",
+            "max_age": 24 * 60 * 60,
+            "path": "/",
+            "domain": None
+        }
         
+        logger.info(f"Setting cookie '{cookie_name}' with value length: {len(access_token)}")
+        logger.info(f"Cookie settings: {cookie_settings}")
+        logger.info(f"Redirect URL: {return_url}")
+        
+        response.set_cookie(**cookie_settings)
+        
+        # Verify cookie was set in response headers
+        if hasattr(response, 'headers'):
+            cookie_header = response.headers.get('Set-Cookie', '')
+            logger.info(f"Set-Cookie header: {cookie_header}")
+        
+        logger.info(f"Cookie set successfully, redirecting to: {return_url}")
         return response
 
     except Exception as e:
@@ -243,15 +310,34 @@ async def oauth_callback(request: Request):
 
 def logout_user(request: Request):
     """Logout user by clearing JWT cookie"""
-    response = RedirectResponse(url=f"{BASE_URL}/")
+    cookie_name = manager.cookie_name
+    logger.info(f"Logging out user, deleting cookie '{cookie_name}'")
     
-    # Clear the JWT cookie
-    response.delete_cookie(
-        key=manager.cookie_name,
-        secure=True,
-        samesite="none"
+    # Get redirect URL - default to root, but check for return URL
+    redirect_url = request.query_params.get("return_url", f"{BASE_URL}/")
+    
+    # If redirect URL is absolute and points to our domain, convert to relative path
+    if redirect_url.startswith(BASE_URL):
+        redirect_url = redirect_url.replace(BASE_URL, "")
+        if not redirect_url:
+            redirect_url = "/"
+    
+    response = RedirectResponse(url=redirect_url)
+    
+    # Clear the JWT cookie by setting it to "deleted" with immediate expiration
+    # Setting to a non-empty invalid value ensures fastapi-login won't treat it as valid
+    response.set_cookie(
+        key=cookie_name,
+        value="deleted",  # Invalid JWT value that will fail validation
+        max_age=0,  # Expire immediately
+        expires=0,  # Expire immediately
+        path="/",  # Must match the path used when setting the cookie
+        secure=True,  # Must match secure setting
+        httponly=True,  # Must match httponly setting
+        samesite="none"  # Must match samesite setting
     )
     
+    logger.info(f"Cookie '{cookie_name}' deleted, redirecting to: {redirect_url}")
     return response
 
 def is_oauth_configured() -> bool:
