@@ -54,6 +54,9 @@ class UserResponse(BaseModel):
     is_admin: bool
     is_host: bool
     is_attendee: bool
+    host_id: Optional[str] = None
+    attendee_id: Optional[str] = None
+    admin_id: Optional[str] = None
     created_at: str
     updated_at: Optional[str] = None
 

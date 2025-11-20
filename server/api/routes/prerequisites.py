@@ -19,10 +19,10 @@ router = APIRouter(prefix="/prerequisites", tags=["prerequisites"])
 async def list_prerequisites(db: Session = Depends(get_db)):
     """List all prerequisites/capabilities (public)."""
     capabilities = db.query(Capabilities).all()
-    return [_format_prerequisite_response(cap) for cap in capabilities]
+    return [_format_prerequisite_response(cap, db) for cap in capabilities]
 
 
-@router.post("/", response_model=PrerequisiteResponse)
+@router.post("/", response_model=PrerequisiteResponse, dependencies=[Depends(require_admin)])
 async def create_prerequisite(
     prerequisite: PrerequisiteCreate,
     db: Session = Depends(get_db)

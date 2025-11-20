@@ -10,7 +10,7 @@ import uuid
 from database import get_db
 from models import Conventions, Locations, EventSlot, Equipment, Attendees, Users
 from api.auth import require_admin, require_attendee, get_current_user
-from datetime import datetime, time
+from datetime import datetime, time, timedelta
 from api.schemas import (
     ConventionCreate, ConventionUpdate, ConventionResponse,
     LocationCreate, LocationUpdate, LocationResponse,
@@ -181,6 +181,35 @@ async def get_location(location_id: str, db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Location not found")
     
     return _format_location_response(location, db)
+
+
+@router.delete("/locations/{location_id}", dependencies=[Depends(require_admin)])
+async def delete_location(location_id: str, db: Session = Depends(get_db)):
+    """Delete a location (admin only)."""
+    location = db.query(Locations).filter(Locations.id == location_id).first()
+    if not location:
+        raise HTTPException(status_code=404, detail="Location not found")
+    
+    # Check if any event slots are assigned to this location
+    event_slots = db.query(EventSlot).filter(EventSlot.location_id == location_id).all()
+    if event_slots:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot delete location. {len(event_slots)} event slot(s) are assigned to this location. Delete them first."
+        )
+    
+    # Check if any equipment is assigned to this location
+    equipment = db.query(Equipment).filter(Equipment.location_id == location_id).all()
+    if equipment:
+        raise HTTPException(
+            status_code=409,
+            detail=f"Cannot delete location. {len(equipment)} equipment item(s) are assigned to this location. Delete them first."
+        )
+    
+    db.delete(location)
+    db.commit()
+    
+    return {"message": "Location deleted successfully"}
 
 
 # Event slot endpoints

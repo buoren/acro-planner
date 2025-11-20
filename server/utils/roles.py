@@ -288,6 +288,26 @@ def get_user_with_roles(db: Session, user_id: str) -> dict:
     
     roles = get_user_roles_list(db, user_id)
     
+    # Get role-specific IDs if user has those roles
+    host_id = None
+    attendee_id = None
+    admin_id = None
+    
+    if UserRole.HOST.value in roles:
+        host = db.query(Hosts).filter(Hosts.user_id == user_id).first()
+        if host:
+            host_id = host.id
+    
+    if UserRole.ATTENDEE.value in roles:
+        attendee = db.query(Attendees).filter(Attendees.user_id == user_id).first()
+        if attendee:
+            attendee_id = attendee.id
+    
+    if UserRole.ADMIN.value in roles:
+        admin = db.query(Admins).filter(Admins.user_id == user_id).first()
+        if admin:
+            admin_id = admin.id
+    
     return {
         "id": user.id,
         "email": user.email,
@@ -296,6 +316,9 @@ def get_user_with_roles(db: Session, user_id: str) -> dict:
         "is_admin": UserRole.ADMIN.value in roles,
         "is_host": UserRole.HOST.value in roles,
         "is_attendee": UserRole.ATTENDEE.value in roles,
+        "host_id": host_id,
+        "attendee_id": attendee_id,
+        "admin_id": admin_id,
         "created_at": user.created_at,
         "updated_at": user.updated_at
     }

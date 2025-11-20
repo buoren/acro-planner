@@ -5,7 +5,7 @@ Workshop (Event) management routes for hosts.
 from typing import List, Optional
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy.orm import Session
-from ulid import ULID
+# ULID will be imported locally where needed
 
 from database import get_db
 from models import Events, Hosts, HostEvents, EventSlot, Capabilities, Equipment, Users, Selections, Locations
@@ -53,8 +53,11 @@ async def create_workshop(
     attendee = db.query(Attendees).filter(Attendees.id == host.attendee_id).first()
     convention_id = attendee.convention_id if attendee else None
     
+    # Import ULID locally and use the correct API
+    import ulid
+    
     new_workshop = Events(
-        id=str(ULID()),
+        id=str(ulid.new()),
         name=workshop.name,
         description=workshop.description,
         max_students=workshop.max_students,
@@ -64,9 +67,9 @@ async def create_workshop(
     )
     db.add(new_workshop)
     
-    # Create host-event relationship
+    # Create host-event relationship  
     host_event = HostEvents(
-        id=str(ULID()),
+        id=str(ulid.new()),
         host_id=workshop.host_id,
         event_id=new_workshop.id
     )

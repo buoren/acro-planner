@@ -154,7 +154,7 @@ if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$SECRET
 GOOGLE_CLIENT_ID: '${GOOGLE_CLIENT_ID}'
 GOOGLE_CLIENT_SECRET: '${GOOGLE_CLIENT_SECRET}'
 SECRET_KEY: '${SECRET_KEY}'
-BASE_URL: 'https://acro-planner-backend-733697808355.us-central1.run.app'
+BASE_URL: 'https://acro.vaguely.nl'
 EOF
     
     # Add database URL if available
@@ -218,7 +218,7 @@ echo -e "${GREEN}✅ Backend deployment complete!${NC}"
 BACKEND_SERVICE_URL=$(gcloud run services describe acro-planner-backend --region=${REGION} --format='value(status.url)')
 
 echo -e "${GREEN}🌐 Backend URL: ${BACKEND_SERVICE_URL}${NC}"
-echo -e "${GREEN}🌐 Admin Interface: ${BACKEND_SERVICE_URL}/admin${NC}"
+echo -e "${GREEN}🌐 Admin Interface: https://acro.vaguely.nl/admin${NC}"
 
 # Test the deployment
 echo -e "${YELLOW}Testing backend deployment...${NC}"
@@ -233,14 +233,14 @@ fi
 echo -e "${GREEN}🎉 Backend deployed successfully!${NC}"
 echo ""
 echo -e "${YELLOW}The admin interface is available at:${NC}"
-echo "${BACKEND_SERVICE_URL}/admin"
+echo "https://acro.vaguely.nl/admin"
 echo ""
 if [ -n "$GOOGLE_CLIENT_ID" ] && [ -n "$GOOGLE_CLIENT_SECRET" ] && [ -n "$SECRET_KEY" ]; then
     echo -e "${GREEN}🔐 OAuth authentication is enabled for the admin interface${NC}"
     echo -e "${YELLOW}Next steps:${NC}"
     echo "1. Ensure Google OAuth redirect URI includes: ${BACKEND_SERVICE_URL}/auth/callback"
     echo "2. Ensure authorized JavaScript origins include: ${BACKEND_SERVICE_URL}"
-    echo "3. Visit ${BACKEND_SERVICE_URL}/admin to access the protected admin interface"
+    echo "3. Visit https://acro.vaguely.nl/admin to access the protected admin interface"
 else
     echo -e "${YELLOW}⚠️  OAuth authentication is NOT configured. The admin interface is unprotected.${NC}"
     echo -e "${YELLOW}To enable OAuth protection:${NC}"

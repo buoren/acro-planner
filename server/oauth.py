@@ -24,7 +24,7 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET")
 SECRET_KEY = os.getenv("SECRET_KEY", secrets.token_urlsafe(32))
 
 # Base URL for the application
-BASE_URL = os.getenv("BASE_URL", "https://acro-planner-backend-733697808355.us-central1.run.app")
+BASE_URL = os.getenv("BASE_URL", "https://acro.vaguely.nl")
 
 # Initialize OAuth
 oauth = OAuth()

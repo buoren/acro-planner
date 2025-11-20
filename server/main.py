@@ -77,6 +77,7 @@ def get_allowed_origins():
     # Production origins
     production_origins = [
         "https://acro-planner-backend-733697808355.us-central1.run.app",  # Backend itself
+        "https://acro.vaguely.nl",  # Custom domain
         "https://storage.googleapis.com",  # Flutter app on GCS
     ]
     
@@ -105,6 +106,27 @@ app.add_middleware(
     allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],  # Specific methods
     allow_headers=["*"],  # Keep headers flexible for now
 )
+
+# Forwarded Headers Middleware (for custom domains behind load balancer)
+@app.middleware("http")
+async def handle_forwarded_headers(request: Request, call_next):
+    """Handle X-Forwarded-* headers from load balancer for custom domains"""
+    # Get forwarded headers from load balancer
+    forwarded_host = request.headers.get("X-Forwarded-Host")
+    forwarded_proto = request.headers.get("X-Forwarded-Proto", "https")
+    
+    if forwarded_host:
+        # Update request URL components for proper redirects
+        request.scope["scheme"] = forwarded_proto
+        request.scope["server"] = (forwarded_host, 443 if forwarded_proto == "https" else 80)
+        # Update headers for FastAPI URL building
+        request.scope["headers"] = [
+            (b"host", forwarded_host.encode()),
+            *[(k, v) for k, v in request.scope["headers"] if k != b"host"]
+        ]
+    
+    response = await call_next(request)
+    return response
 
 # Security Headers Middleware
 @app.middleware("http")

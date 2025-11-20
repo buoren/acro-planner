@@ -44,6 +44,9 @@ def get_all_users(db: Session = Depends(get_db)):
                     is_admin=user_info['is_admin'],
                     is_host=user_info['is_host'],
                     is_attendee=user_info['is_attendee'],
+                    host_id=user_info.get('host_id'),
+                    attendee_id=user_info.get('attendee_id'),
+                    admin_id=user_info.get('admin_id'),
                     created_at=user_info['created_at'].isoformat() if user_info['created_at'] else datetime.utcnow().isoformat(),
                     updated_at=user_info['updated_at'].isoformat() if user_info.get('updated_at') else None
                 ))
@@ -138,6 +141,9 @@ def add_user(user_data: UserRegistration, db: Session = Depends(get_db)):
                 is_admin=user_with_roles['is_admin'],
                 is_host=user_with_roles['is_host'],
                 is_attendee=user_with_roles['is_attendee'],
+                host_id=user_with_roles.get('host_id'),
+                attendee_id=user_with_roles.get('attendee_id'),
+                admin_id=user_with_roles.get('admin_id'),
                 created_at=user_with_roles['created_at'].isoformat() if user_with_roles['created_at'] else datetime.utcnow().isoformat(),
                 updated_at=user_with_roles['updated_at'].isoformat() if user_with_roles.get('updated_at') else None
             )
@@ -151,6 +157,9 @@ def add_user(user_data: UserRegistration, db: Session = Depends(get_db)):
                 is_admin=False,
                 is_host=False,
                 is_attendee=False,
+                host_id=None,
+                attendee_id=None,
+                admin_id=None,
                 created_at=new_user.created_at.isoformat() if new_user.created_at else datetime.utcnow().isoformat(),
                 updated_at=None
             )
@@ -201,6 +210,9 @@ def get_current_user_info(user: dict = Depends(require_auth)):
             is_admin=user['is_admin'],
             is_host=user['is_host'],
             is_attendee=user['is_attendee'],
+            host_id=user.get('host_id'),
+            attendee_id=user.get('attendee_id'),
+            admin_id=user.get('admin_id'),
             created_at=created_at.isoformat() if created_at else datetime.utcnow().isoformat(),
             updated_at=updated_at.isoformat() if updated_at else None
         )
@@ -268,6 +280,9 @@ def update_user_role(
             is_admin=updated_user['is_admin'],
             is_host=updated_user['is_host'],
             is_attendee=updated_user['is_attendee'],
+            host_id=updated_user.get('host_id'),
+            attendee_id=updated_user.get('attendee_id'),
+            admin_id=updated_user.get('admin_id'),
             created_at=updated_user['created_at'].isoformat() if updated_user['created_at'] else datetime.utcnow().isoformat(),
             updated_at=updated_user['updated_at'].isoformat() if updated_user.get('updated_at') else None
         )
@@ -440,6 +455,9 @@ async def get_users_by_role_endpoint(
                     is_admin=user_info['is_admin'],
                     is_host=user_info['is_host'],
                     is_attendee=user_info['is_attendee'],
+                    host_id=user_info.get('host_id'),
+                    attendee_id=user_info.get('attendee_id'),
+                    admin_id=user_info.get('admin_id'),
                     created_at=user_info['created_at'].isoformat() if user_info['created_at'] else datetime.utcnow().isoformat(),
                     updated_at=user_info['updated_at'].isoformat() if user_info.get('updated_at') else None
                 ))

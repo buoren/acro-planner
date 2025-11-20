@@ -7,13 +7,13 @@ interface Environment {
 }
 
 const DEV_ENV: Environment = {
-  API_BASE_URL: 'https://acro-planner-backend-733697808355.us-central1.run.app',
+  API_BASE_URL: 'https://acro.vaguely.nl',
   API_TIMEOUT: 30000,
   ENVIRONMENT: 'development',
 };
 
 const PROD_ENV: Environment = {
-  API_BASE_URL: 'https://acro-planner-backend-733697808355.us-central1.run.app',
+  API_BASE_URL: 'https://acro.vaguely.nl',
   API_TIMEOUT: 30000,
   ENVIRONMENT: 'production',
 };
